@@ -5,7 +5,7 @@
     <img src="https://img.shields.io/github/v/release/mrtrkmn/orchi?style=flat-square" alt="GitHub release">
   </a>
    <a href="https://www.gnu.org/licenses/gpl-3.0">
-    <img src="https://img.shields.io/badge/License-GPLv3-blue.svg?longCache=true&style=flat-square" alt="licence">
+    <img src="https://img.shields.io/badge/License-GPLv3-blue.svg?longCache=true&style=flat-square" alt="license">
   </a>
   <a href="https://github.com/mrtrkmn/orchi/issues">
     <img src="https://img.shields.io/github/issues/mrtrkmn/orchi?style=flat-square" alt="issues">

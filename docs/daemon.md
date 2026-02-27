@@ -33,7 +33,7 @@ metadata:
 spec:
   tag: sql-injection
   name: "SQL Injection"
-  image: registry.cicibogaz.com/orchi/challenges/sql-injection:1.0.0
+  image: ghcr.io/mrtrkmn/orchi/challenges/sql-injection:1.0.0
   memoryMB: 256
   cpu: 0.5
   flags:
