@@ -378,7 +378,7 @@ Go to your repository **Settings → Secrets and variables → Actions** and add
 | `AWS_ROLE_ARN` | `arn:aws:iam::ACCOUNT_ID:role/orchi-github-actions` | IAM role ARN from Step 2 |
 | `AWS_REGION` | `eu-west-1` | AWS region where the cluster runs |
 | `EKS_CLUSTER_NAME` | `orchi-cluster` | EKS cluster name |
-| `CLOUDFLARE_API_TOKEN` | `<token>` | Cloudflare API token for DNS-01 challenge (see Step 3.5) |
+| `CLOUDFLARE_API_TOKEN` | `<token>` | *(Optional)* Cloudflare API token — only needed if using CI/CD to create the K8s secret. Otherwise create manually per Step 3.5 |
 
 For environment-specific secrets, create GitHub Environments (`dev`, `staging`, `prod`) under **Settings → Environments** and add the secrets per environment. This allows different clusters per environment.
 

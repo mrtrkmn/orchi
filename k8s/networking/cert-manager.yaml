@@ -30,8 +30,15 @@
 # Cloudflare API Token Secret (template — replace before deploying)
 # ------------------------------------------------------------------------------
 # WARNING: Do NOT commit real API tokens to version control. In production,
-# use one of:
-#   - kubectl create secret (manual)
+# WARNING: Do NOT commit real API tokens to version control.
+# This Secret is a TEMPLATE ONLY — it will fail validation if applied as-is.
+# In production, create the secret manually:
+#
+#   kubectl create secret generic cloudflare-api-token \
+#     --namespace cert-manager \
+#     --from-literal=api-token=<YOUR_CLOUDFLARE_API_TOKEN>
+#
+# Or use:
 #   - External Secrets Operator (e.g., AWS Secrets Manager, HashiCorp Vault)
 #   - Sealed Secrets (Bitnami)
 # ------------------------------------------------------------------------------
@@ -136,4 +143,5 @@ spec:
     - cyberorch.com
     - "*.cyberorch.com"
   # Auto-renew 30 days before expiry (Let's Encrypt certs are valid for 90 days)
+  # 720h = 30 days
   renewBefore: 720h
