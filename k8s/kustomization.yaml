@@ -43,10 +43,16 @@ resources:
   - workloads/guacamole-deployment.yaml
   - workloads/wireguard-deployment.yaml
   - workloads/hpa.yaml
+  # Decoupled architecture workloads
+  - workloads/frontend-deployment.yaml
+  - workloads/api-gateway-deployment.yaml
 
   # Networking
   - networking/ingress.yaml
   - networking/networkpolicy-store-access.yaml
+  # Decoupled architecture networking
+  - networking/ingress-decoupled.yaml
+  - networking/networkpolicy-api-frontend.yaml
 
   # Observability (requires prometheus-operator)
   - observability/prometheus-servicemonitor.yaml

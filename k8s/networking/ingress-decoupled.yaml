@@ -1,0 +1,49 @@
+# Orchi Decoupled Architecture Ingress
+#
+# Routes traffic to the frontend SPA and API gateway independently.
+# TLS termination with cert-manager for automatic certificate management.
+# Supports WebSocket upgrade for live scoreboard connections.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: orchi-decoupled-ingress
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-ingress
+    app.kubernetes.io/part-of: orchi
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    # Rate limiting middleware
+    traefik.ingress.kubernetes.io/router.middlewares: orchi-system-rate-limit@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - orchi.io
+        - api.orchi.io
+      secretName: orchi-tls-cert
+  rules:
+    # Frontend SPA — static assets served by Nginx
+    - host: orchi.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: orchi-frontend
+                port:
+                  number: 80
+    # API Gateway — REST API and WebSocket endpoints
+    - host: api.orchi.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: orchi-api-gateway
+                port:
+                  number: 8080
