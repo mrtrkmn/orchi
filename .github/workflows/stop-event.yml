@@ -1,0 +1,61 @@
+name: Stop Event
+
+on:
+  workflow_dispatch:
+    inputs:
+      event_tag:
+        description: 'Event tag to stop/delete'
+        required: true
+        type: string
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+        default: 'dev'
+
+jobs:
+  stop-event:
+    name: Stop event "${{ github.event.inputs.event_tag }}"
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Set up kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Show current event status
+        run: |
+          echo "=== Current event status ==="
+          kubectl get events.orchi.cicibogaz.com/${{ github.event.inputs.event_tag }} -o wide || {
+            echo "::error::Event '${{ github.event.inputs.event_tag }}' not found"
+            exit 1
+          }
+
+      - name: Delete Event CR
+        run: |
+          kubectl delete events.orchi.cicibogaz.com/${{ github.event.inputs.event_tag }}
+          echo "Event '${{ github.event.inputs.event_tag }}' deleted."
+
+      - name: Verify cleanup
+        run: |
+          echo "Waiting for cleanup..."
+          sleep 10
+          echo ""
+          echo "=== Remaining events ==="
+          kubectl get events.orchi.cicibogaz.com 2>/dev/null || echo "No events"
+          echo ""
+          echo "=== Lab namespaces ==="
+          kubectl get ns -l orchi.cicibogaz.com/component=lab 2>/dev/null || echo "No lab namespaces"

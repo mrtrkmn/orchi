@@ -58,22 +58,41 @@ orchi-lab-{id} namespaces (one per lab):
 - [Kustomize](https://kustomize.io/) (built into kubectl)
 - A CNI plugin that supports NetworkPolicy (Calico, Cilium)
 
-### Deploy
+### Deploy via GitHub Actions
+
+Go to **Actions → Deploy Orchi Platform → Run workflow**, select an environment (`dev`, `staging`, `prod`), and run. The workflow applies the Kustomize overlay to the cluster.
+
+Deployments also trigger automatically on version tags (`v*.*.*`), deploying to `prod`.
+
+> **Setup:** Add a `KUBECONFIG` repository secret (base64-encoded kubeconfig) for cluster access.
+
+### Create an Event via GitHub Actions
+
+Go to **Actions → Create Event → Run workflow** and fill in:
+
+| Input | Description | Example |
+|---|---|---|
+| `event_tag` | Unique identifier (lowercase, hyphens) | `ctf-2024` |
+| `event_name` | Display name | `CTF Competition 2024` |
+| `capacity` | Max teams | `50` |
+| `exercises` | Comma-separated challenge tags | `sql-injection,xss-basic,buffer-overflow` |
+| `frontend_image` | Optional VM image | `ghcr.io/mrtrkmn/orchi/frontends/kali:latest` |
+| `environment` | Target cluster | `prod` |
+
+The workflow generates an Event CR and applies it to the cluster. The operator reconciles the event into lab namespaces, challenge pods, and network policies.
+
+### Stop an Event
+
+Go to **Actions → Stop Event → Run workflow**, enter the event tag, and run.
+
+### Manual Deploy / Event Creation
 
 ```bash
-# Development
+# Deploy
 kubectl apply -k k8s/overlays/dev
 
-# Staging
-kubectl apply -k k8s/overlays/staging
-
-# Production
-kubectl apply -k k8s/overlays/prod
-```
-
-### Create an Event
-
-```yaml
+# Create event
+kubectl apply -f - <<EOF
 apiVersion: orchi.cicibogaz.com/v1alpha1
 kind: Event
 metadata:
@@ -87,20 +106,11 @@ spec:
       - sql-injection
       - xss-basic
       - buffer-overflow
-```
+EOF
 
-```bash
-kubectl apply -f event.yaml
+# Verify
 kubectl get events.orchi.cicibogaz.com
-```
-
-### Verify
-
-```bash
 kubectl -n orchi-system get pods
-kubectl get events.orchi.cicibogaz.com
-kubectl get labs.orchi.cicibogaz.com
-kubectl get teams.orchi.cicibogaz.com -n orchi-system
 ```
 
 ## Project Structure

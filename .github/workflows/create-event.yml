@@ -1,0 +1,155 @@
+name: Create Event
+
+on:
+  workflow_dispatch:
+    inputs:
+      event_tag:
+        description: 'Event tag (unique identifier, lowercase alphanumeric with hyphens)'
+        required: true
+        type: string
+      event_name:
+        description: 'Event display name'
+        required: true
+        type: string
+      capacity:
+        description: 'Maximum number of teams'
+        required: true
+        type: number
+        default: 30
+      exercises:
+        description: 'Comma-separated list of exercise tags (e.g. sql-injection,xss-basic,buffer-overflow)'
+        required: true
+        type: string
+      frontend_image:
+        description: 'Frontend VM image (optional, e.g. ghcr.io/mrtrkmn/orchi/frontends/kali:latest)'
+        required: false
+        type: string
+      frontend_memory_mb:
+        description: 'Frontend VM memory in MB'
+        required: false
+        type: number
+        default: 4096
+      frontend_cpu:
+        description: 'Frontend VM CPU cores'
+        required: false
+        type: number
+        default: 2
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+        default: 'dev'
+
+jobs:
+  create-event:
+    name: Create event "${{ github.event.inputs.event_name }}"
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate inputs
+        run: |
+          TAG="${{ github.event.inputs.event_tag }}"
+          if ! echo "$TAG" | grep -qE '^[a-z0-9][a-z0-9-]*[a-z0-9]$'; then
+            echo "::error::Event tag must be lowercase alphanumeric with hyphens (e.g. ctf-2024)"
+            exit 1
+          fi
+          if [ ${#TAG} -lt 2 ] || [ ${#TAG} -gt 63 ]; then
+            echo "::error::Event tag must be between 2 and 63 characters"
+            exit 1
+          fi
+
+      - name: Generate Event CR manifest
+        run: |
+          EXERCISES_YAML=""
+          IFS=',' read -ra TAGS <<< "${{ github.event.inputs.exercises }}"
+          for tag in "${TAGS[@]}"; do
+            tag=$(echo "$tag" | xargs)  # trim whitespace
+            EXERCISES_YAML="${EXERCISES_YAML}      - ${tag}"$'\n'
+          done
+
+          FRONTEND_SECTION=""
+          if [ -n "${{ github.event.inputs.frontend_image }}" ]; then
+            FRONTEND_SECTION="    frontends:
+              - image: ${{ github.event.inputs.frontend_image }}
+                memoryMB: ${{ github.event.inputs.frontend_memory_mb }}
+                cpu: ${{ github.event.inputs.frontend_cpu }}"
+          fi
+
+          cat > /tmp/event.yaml << EOF
+          apiVersion: orchi.cicibogaz.com/v1alpha1
+          kind: Event
+          metadata:
+            name: ${{ github.event.inputs.event_tag }}
+            labels:
+              app.kubernetes.io/managed-by: github-actions
+              app.kubernetes.io/part-of: orchi
+              orchi.cicibogaz.com/created-by: ${{ github.actor }}
+          spec:
+            tag: ${{ github.event.inputs.event_tag }}
+            name: "${{ github.event.inputs.event_name }}"
+            capacity: ${{ github.event.inputs.capacity }}
+            createdBy: ${{ github.actor }}
+            lab:
+              exercises:
+          ${EXERCISES_YAML}${FRONTEND_SECTION}
+          EOF
+
+          # Remove leading spaces from heredoc
+          sed -i 's/^          //' /tmp/event.yaml
+
+          echo "=== Generated Event CR ==="
+          cat /tmp/event.yaml
+          echo "=========================="
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Set up kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Apply Event CR
+        run: |
+          kubectl apply -f /tmp/event.yaml
+          echo ""
+          echo "=== Event status ==="
+          kubectl get events.orchi.cicibogaz.com/${{ github.event.inputs.event_tag }} -o wide
+
+      - name: Wait for event to be ready
+        run: |
+          echo "Waiting for event to reach Running phase..."
+          for i in $(seq 1 30); do
+            PHASE=$(kubectl get events.orchi.cicibogaz.com/${{ github.event.inputs.event_tag }} -o jsonpath='{.status.phase}' 2>/dev/null || echo "Pending")
+            echo "  Attempt $i/30: phase=$PHASE"
+            if [ "$PHASE" = "Running" ]; then
+              echo "Event is running!"
+              break
+            fi
+            if [ "$PHASE" = "Failed" ]; then
+              echo "::error::Event failed to start"
+              kubectl get events.orchi.cicibogaz.com/${{ github.event.inputs.event_tag }} -o yaml
+              exit 1
+            fi
+            sleep 10
+          done
+
+      - name: Print event details
+        run: |
+          echo "=== Event ==="
+          kubectl get events.orchi.cicibogaz.com/${{ github.event.inputs.event_tag }} -o wide
+          echo ""
+          echo "=== Labs ==="
+          kubectl get labs.orchi.cicibogaz.com -l orchi.cicibogaz.com/event=${{ github.event.inputs.event_tag }} 2>/dev/null || echo "No labs yet"
+          echo ""
+          echo "=== Teams ==="
+          kubectl get teams.orchi.cicibogaz.com -n orchi-system -l orchi.cicibogaz.com/event=${{ github.event.inputs.event_tag }} 2>/dev/null || echo "No teams yet"
