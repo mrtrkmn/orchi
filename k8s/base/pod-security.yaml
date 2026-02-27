@@ -24,7 +24,7 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: orchi-operator
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: system
+    orchi.cyberorch.com/component: system
     # Pod Security Admission labels
     pod-security.kubernetes.io/enforce: baseline
     pod-security.kubernetes.io/enforce-version: latest
@@ -43,7 +43,7 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: orchi-operator
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: lab
+    orchi.cyberorch.com/component: lab
     # Pod Security Admission labels — strict enforcement
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/enforce-version: latest

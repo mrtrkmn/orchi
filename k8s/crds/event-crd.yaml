@@ -22,12 +22,12 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: events.orchi.cicibogaz.com
+  name: events.orchi.cyberorch.com
   labels:
     app.kubernetes.io/managed-by: orchi-operator
     app.kubernetes.io/part-of: orchi
 spec:
-  group: orchi.cicibogaz.com
+  group: orchi.cyberorch.com
   names:
     kind: Event
     listKind: EventList

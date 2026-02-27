@@ -21,8 +21,8 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: orchi-operator
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: network-policy
-    orchi.cicibogaz.com/lab-id: "example"
+    orchi.cyberorch.com/component: network-policy
+    orchi.cyberorch.com/lab-id: "example"
 # Note: podSelector targets pods labeled as 'frontend' — in the Orchi lab model,
 # 'frontend' refers to the VM instances that provide the desktop environment
 # (Kali, Ubuntu, Parrot) with VNC access, not the web frontend.
@@ -30,7 +30,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      orchi.cicibogaz.com/component: frontend
+      orchi.cyberorch.com/component: frontend
   policyTypes:
     - Ingress
   ingress:
@@ -38,7 +38,7 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
-              orchi.cicibogaz.com/component: system
+              orchi.cyberorch.com/component: system
           podSelector:
             matchLabels:
               app.kubernetes.io/name: orchi-vnc-proxy

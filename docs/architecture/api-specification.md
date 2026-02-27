@@ -11,8 +11,8 @@ with `/api/v1/` and require JWT authentication unless explicitly marked as publi
 ## Base URL
 
 ```
-Production:  https://api.orchi.io/api/v1
-Staging:     https://api-staging.orchi.io/api/v1
+Production:  https://api.cyberorch.com/api/v1
+Staging:     https://api-staging.cyberorch.com/api/v1
 Development: http://localhost:8080/api/v1
 ```
 
@@ -373,7 +373,7 @@ Get lab status for the team.
     "frontend": {
       "type": "kali",
       "status": "running",
-      "rdp_url": "https://guac.orchi.io/session/abc123"
+      "rdp_url": "https://guac.cyberorch.com/session/abc123"
     }
   }
 }
@@ -458,7 +458,7 @@ X-RateLimit-Reset: 1700003600
 ## CORS Policy
 
 ```
-Access-Control-Allow-Origin: https://orchi.io, https://staging.orchi.io
+Access-Control-Allow-Origin: https://cyberorch.com, https://staging.cyberorch.com
 Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
 Access-Control-Allow-Headers: Authorization, Content-Type, X-Request-ID
 Access-Control-Max-Age: 86400

@@ -32,7 +32,7 @@ metadata:
     app.kubernetes.io/name: orchi-data-migration
     app.kubernetes.io/managed-by: orchi-operator
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: migration
+    orchi.cyberorch.com/component: migration
 spec:
   backoffLimit: 3
   activeDeadlineSeconds: 7200

@@ -9,7 +9,7 @@ Kubernetes manifests for migrating the orchi platform from Docker + legacy daemo
 │                              Kubernetes Cluster                                  │
 │                                                                                  │
 │  ┌───── External Traffic ──────────────────────────────────────────────────────┐  │
-│  │   Internet ──► Ingress (nginx) ──► orchi.cicibogaz.com                     │  │
+│  │   Internet ──► Ingress (nginx) ──► cyberorch.com                     │  │
 │  │                 │  ├── /           → Amigo (challenge frontend)            │  │
 │  │                 │  └── /guacamole  → Guacamole (remote desktop)            │  │
 │  │   VPN Clients ──► LoadBalancer:51820 ──► WireGuard Pod                     │  │
@@ -362,14 +362,14 @@ kubectl apply -f k8s/workloads/velero-schedule.yaml
 
 #### Step 8 — Create an event
 ```yaml
-apiVersion: orchi.cicibogaz.com/v1alpha1
+apiVersion: orchi.cyberorch.com/v1alpha1
 kind: Event
 metadata:
   name: ctf-2024
 spec:
   tag: ctf-2024
   name: "CTF Competition 2024"
-  host: ctf.cicibogaz.com
+  host: ctf.cyberorch.com
   capacity: 50
   createdBy: admin
   lab:
@@ -393,9 +393,9 @@ kubectl -n orchi-system get pods
 kubectl -n orchi-system get statefulsets
 
 # Events, labs, teams
-kubectl get events.orchi.cicibogaz.com
-kubectl get labs.orchi.cicibogaz.com
-kubectl get teams.orchi.cicibogaz.com -n orchi-system
+kubectl get events.orchi.cyberorch.com
+kubectl get labs.orchi.cyberorch.com
+kubectl get teams.orchi.cyberorch.com -n orchi-system
 
 # Observability
 kubectl -n orchi-system get servicemonitors
@@ -430,8 +430,8 @@ orchi-lab-{lab-id}
 labels:
   app.kubernetes.io/managed-by: orchi-operator
   app.kubernetes.io/part-of: orchi
-  orchi.cicibogaz.com/lab-id: "{lab-id}"
-  orchi.cicibogaz.com/component: lab
+  orchi.cyberorch.com/lab-id: "{lab-id}"
+  orchi.cyberorch.com/component: lab
 ```
 
 ## NetworkPolicy Strategy

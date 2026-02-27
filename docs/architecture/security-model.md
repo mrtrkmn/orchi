@@ -311,8 +311,8 @@ Content-Security-Policy:
   style-src 'self' 'unsafe-inline';
   img-src 'self' data: https:;
   font-src 'self';
-  connect-src 'self' https://api.orchi.io wss://api.orchi.io;
-  frame-src 'self' https://guac.orchi.io;
+  connect-src 'self' https://api.cyberorch.com wss://api.cyberorch.com;
+  frame-src 'self' https://guac.cyberorch.com;
   base-uri 'self';
   form-action 'self';
 ```

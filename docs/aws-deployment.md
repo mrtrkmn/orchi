@@ -315,6 +315,60 @@ helm install cert-manager jetstack/cert-manager \
   --set crds.enabled=true
 ```
 
+### 3.5 Configure Cloudflare DNS for Let's Encrypt Wildcard Certificates
+
+Orchi uses a wildcard TLS certificate (`*.cyberorch.com`) issued by Let's Encrypt.
+Wildcard certificates require DNS-01 challenge validation, which is handled by
+cert-manager using the Cloudflare API.
+
+#### 3.5.1 Create a Cloudflare API Token
+
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com/profile/api-tokens)
+2. Click **Create Token**
+3. Use the **Edit zone DNS** template
+4. Configure permissions:
+   - **Zone → DNS → Edit**
+   - **Zone → Zone → Read**
+5. Zone Resources: **Include → Specific zone → cyberorch.com**
+6. Click **Create Token** and copy the token value
+
+#### 3.5.2 Create the Cloudflare Secret in Kubernetes
+
+```bash
+kubectl create secret generic cloudflare-api-token \
+  --namespace cert-manager \
+  --from-literal=api-token=<YOUR_CLOUDFLARE_API_TOKEN>
+```
+
+> **Security:** The token only needs DNS edit permissions for the `cyberorch.com` zone.
+> Do not use a Global API Key. The secret template in `k8s/networking/cert-manager.yaml`
+> is a placeholder — use `kubectl create secret` or External Secrets Operator in production.
+
+#### 3.5.3 Deploy the ClusterIssuer and Certificate
+
+The cert-manager resources are included in the Kustomize base (`k8s/networking/cert-manager.yaml`).
+After deploying Orchi, verify the certificate is issued:
+
+```bash
+# Check ClusterIssuers
+kubectl get clusterissuers
+
+# Check certificate status
+kubectl -n orchi-system get certificates
+kubectl -n orchi-system describe certificate cyberorch-wildcard-cert
+
+# Check the TLS secret was created
+kubectl -n orchi-system get secret cyberorch-tls-cert
+```
+
+If using staging first (recommended for testing):
+
+```bash
+# Temporarily switch to staging issuer to avoid rate limits
+kubectl -n orchi-system patch certificate cyberorch-wildcard-cert \
+  --type merge -p '{"spec":{"issuerRef":{"name":"letsencrypt-staging"}}}'
+```
+
 ## Step 4 — Configure GitHub Repository Secrets
 
 Go to your repository **Settings → Secrets and variables → Actions** and add:
@@ -324,6 +378,7 @@ Go to your repository **Settings → Secrets and variables → Actions** and add
 | `AWS_ROLE_ARN` | `arn:aws:iam::ACCOUNT_ID:role/orchi-github-actions` | IAM role ARN from Step 2 |
 | `AWS_REGION` | `eu-west-1` | AWS region where the cluster runs |
 | `EKS_CLUSTER_NAME` | `orchi-cluster` | EKS cluster name |
+| `CLOUDFLARE_API_TOKEN` | `<token>` | Cloudflare API token for DNS-01 challenge (see Step 3.5) |
 
 For environment-specific secrets, create GitHub Environments (`dev`, `staging`, `prod`) under **Settings → Environments** and add the secrets per environment. This allows different clusters per environment.
 
@@ -392,10 +447,10 @@ kubectl get crds | grep orchi
 kubectl -n orchi-system get pods
 
 # Check events
-kubectl get events.orchi.cicibogaz.com
+kubectl get events.orchi.cyberorch.com
 
 # Check labs
-kubectl get labs.orchi.cicibogaz.com
+kubectl get labs.orchi.cyberorch.com
 
 # Check ingress
 kubectl -n orchi-system get ingress
@@ -420,7 +475,7 @@ kubectl -n orchi-system rollout status deployment/amigo --timeout=120s
 
 # 4. Create an event
 kubectl apply -f - <<EOF
-apiVersion: orchi.cicibogaz.com/v1alpha1
+apiVersion: orchi.cyberorch.com/v1alpha1
 kind: Event
 metadata:
   name: ctf-2024
@@ -436,7 +491,7 @@ spec:
 EOF
 
 # 5. Verify
-kubectl get events.orchi.cicibogaz.com
+kubectl get events.orchi.cyberorch.com
 kubectl -n orchi-system get pods
 ```
 

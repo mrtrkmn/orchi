@@ -99,7 +99,7 @@ kubectl apply -k k8s/overlays/dev
 
 # Create event
 kubectl apply -f - <<EOF
-apiVersion: orchi.cicibogaz.com/v1alpha1
+apiVersion: orchi.cyberorch.com/v1alpha1
 kind: Event
 metadata:
   name: ctf-2024
@@ -115,7 +115,7 @@ spec:
 EOF
 
 # Verify
-kubectl get events.orchi.cicibogaz.com
+kubectl get events.orchi.cyberorch.com
 kubectl -n orchi-system get pods
 ```
 

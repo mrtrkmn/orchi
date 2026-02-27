@@ -8,25 +8,25 @@ import (
 )
 
 func TestCORSAllowedOrigin(t *testing.T) {
-	origins := []string{"https://orchi.io", "https://staging.orchi.io"}
+	origins := []string{"https://cyberorch.com", "https://staging.cyberorch.com"}
 	handler := CORS(origins)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	req := httptest.NewRequest("GET", "/api/v1/events", nil)
-	req.Header.Set("Origin", "https://orchi.io")
+	req.Header.Set("Origin", "https://cyberorch.com")
 	rr := httptest.NewRecorder()
 
 	handler.ServeHTTP(rr, req)
 
 	got := rr.Header().Get("Access-Control-Allow-Origin")
-	if got != "https://orchi.io" {
-		t.Errorf("CORS origin = %q, want %q", got, "https://orchi.io")
+	if got != "https://cyberorch.com" {
+		t.Errorf("CORS origin = %q, want %q", got, "https://cyberorch.com")
 	}
 }
 
 func TestCORSDisallowedOrigin(t *testing.T) {
-	origins := []string{"https://orchi.io"}
+	origins := []string{"https://cyberorch.com"}
 	handler := CORS(origins)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -44,13 +44,13 @@ func TestCORSDisallowedOrigin(t *testing.T) {
 }
 
 func TestCORSPreflightOptions(t *testing.T) {
-	origins := []string{"https://orchi.io"}
+	origins := []string{"https://cyberorch.com"}
 	handler := CORS(origins)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	req := httptest.NewRequest("OPTIONS", "/api/v1/events", nil)
-	req.Header.Set("Origin", "https://orchi.io")
+	req.Header.Set("Origin", "https://cyberorch.com")
 	rr := httptest.NewRecorder()
 
 	handler.ServeHTTP(rr, req)

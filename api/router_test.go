@@ -11,7 +11,7 @@ import (
 func newTestRouter() http.Handler {
 	return NewRouter(Config{
 		SigningKey:          []byte("test-secret-key-for-tests"),
-		AllowedOrigins:     []string{"https://orchi.io"},
+		AllowedOrigins:     []string{"https://cyberorch.com"},
 		RateLimitPerMinute: 120,
 	})
 }
@@ -108,14 +108,14 @@ func TestCORSHeaders(t *testing.T) {
 	router := newTestRouter()
 
 	req := httptest.NewRequest("OPTIONS", "/api/v1/auth/login", nil)
-	req.Header.Set("Origin", "https://orchi.io")
+	req.Header.Set("Origin", "https://cyberorch.com")
 	rr := httptest.NewRecorder()
 
 	router.ServeHTTP(rr, req)
 
 	origin := rr.Header().Get("Access-Control-Allow-Origin")
-	if origin != "https://orchi.io" {
-		t.Errorf("CORS origin = %q, want %q", origin, "https://orchi.io")
+	if origin != "https://cyberorch.com" {
+		t.Errorf("CORS origin = %q, want %q", origin, "https://cyberorch.com")
 	}
 }
 

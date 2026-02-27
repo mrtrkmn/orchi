@@ -23,7 +23,7 @@ versioned REST APIs and WebSocket connections.
                     └──────┬──────────────────────────────────┬───────────┘
                            │                                  │
               ┌────────────▼──────────┐         ┌─────────────▼───────────┐
-              │   frontend.orchi.io   │         │    api.orchi.io         │
+              │   frontend.cyberorch.com   │         │    api.cyberorch.com         │
               │   (Static SPA)        │         │    (REST API Gateway)   │
               └───────────────────────┘         └─────────────┬───────────┘
                                                               │

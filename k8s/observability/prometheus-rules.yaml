@@ -97,7 +97,7 @@ spec:
 
         - alert: OrchiLabNamespaceCount
           expr: |
-            count(kube_namespace_labels{label_orchi_cicibogaz_com_component="lab"}) > 100
+            count(kube_namespace_labels{label_orchi_cyberorch_com_component="lab"}) > 100
           for: 0m
           labels:
             severity: warning

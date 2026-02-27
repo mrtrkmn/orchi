@@ -375,6 +375,6 @@ server {
 
 ### Kubernetes Deployment
 - Deploy as `Deployment` in `orchi-frontend` namespace
-- Serve via Ingress at `orchi.io` / `app.orchi.io`
+- Serve via Ingress at `cyberorch.com` / `app.cyberorch.com`
 - HPA based on CPU utilization
 - Optional CDN (CloudFront/Cloudflare) in front

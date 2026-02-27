@@ -185,7 +185,7 @@ by building VNC proxying directly into the Orchi API gateway.
                                     ▼
 ┌──────────────────────────────────────────────────────────────────┐
 │                    Kubernetes Ingress (Traefik)                   │
-│  Route: wss://desktop.orchi.io/vnc/{lab-namespace}/{vm-name}    │
+│  Route: wss://desktop.cyberorch.com/vnc/{lab-namespace}/{vm-name}    │
 │  TLS termination, rate limiting                                  │
 └──────────────────────────────┬───────────────────────────────────┘
                                │
@@ -286,7 +286,7 @@ interface DesktopViewerProps {
 }
 
 // The noVNC client connects to:
-// wss://desktop.orchi.io/vnc/{labNamespace}/{vmName}?token={jwt}
+// wss://desktop.cyberorch.com/vnc/{labNamespace}/{vmName}?token={jwt}
 ```
 
 noVNC is served as static assets from the frontend container, eliminating
@@ -300,7 +300,7 @@ the need for a separate Guacamole web application.
 1. User logs in via Orchi frontend → receives JWT
 2. User clicks "Open Desktop" for a VM
 3. Frontend opens noVNC component with WebSocket URL:
-   wss://desktop.orchi.io/vnc/orchi-lab-evt1-team42/kali-vm?token=<jwt>
+   wss://desktop.cyberorch.com/vnc/orchi-lab-evt1-team42/kali-vm?token=<jwt>
 4. VNC Proxy validates JWT:
    - Checks signature (RS256 with Orchi's public key)
    - Extracts claims: { team_id: "team42", event_id: "evt1", role: "participant" }
@@ -379,7 +379,7 @@ See `k8s/workloads/vnc-proxy-deployment.yaml` for the complete manifest.
 
 ```yaml
 # Added to k8s/networking/ingress-decoupled.yaml
-- host: desktop.orchi.io
+- host: desktop.cyberorch.com
   http:
     paths:
       - path: /vnc
@@ -409,7 +409,7 @@ The VNC proxy runs in `orchi-system`.
 
 1. Deploy `orchi-vnc-proxy` in `orchi-system`
 2. Add noVNC component to frontend
-3. Add VNC Ingress route at `desktop.orchi.io`
+3. Add VNC Ingress route at `desktop.cyberorch.com`
 4. Configure NetworkPolicy for VNC proxy → lab VMs (port 5900)
 5. Feature flag: `ENABLE_VNC_PROXY=true` in operator
 

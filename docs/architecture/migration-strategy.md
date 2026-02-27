@@ -137,9 +137,9 @@ decoupled frontend + API architecture.
 1. Create frontend Kubernetes Deployment + Service
 2. Create API Gateway Kubernetes Deployment + Service
 3. Update Ingress to route:
-   - `orchi.io` → Frontend (new)
-   - `api.orchi.io` → API Gateway (new)
-   - `legacy.orchi.io` → Amigo (old, for rollback)
+   - `cyberorch.com` → Frontend (new)
+   - `api.cyberorch.com` → API Gateway (new)
+   - `legacy.cyberorch.com` → Amigo (old, for rollback)
 4. Create NetworkPolicies for new components
 5. Add HPA for new components
 
@@ -152,7 +152,7 @@ decoupled frontend + API architecture.
                       │
            ┌──────────┼──────────┐
            │          │          │
-      orchi.io   api.orchi.io  legacy.orchi.io
+      cyberorch.com   api.cyberorch.com  legacy.cyberorch.com
       (React)    (API GW)      (Amigo)
            │          │          │
            │          ▼          │
@@ -170,7 +170,7 @@ decoupled frontend + API architecture.
 
 **Goal**: Complete migration to new architecture.
 
-1. Redirect all `legacy.orchi.io` traffic to `orchi.io`
+1. Redirect all `legacy.cyberorch.com` traffic to `cyberorch.com`
 2. Remove Amigo deployment from production
 3. Keep Amigo code in repository for reference (deprecated)
 4. Update documentation

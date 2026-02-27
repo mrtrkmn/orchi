@@ -22,7 +22,7 @@ metadata:
   namespace: velero
   labels:
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: backup
+    orchi.cyberorch.com/component: backup
 spec:
   schedule: "0 2 * * *"
   template:
@@ -31,9 +31,9 @@ spec:
       - orchi-system
     # Also back up cluster-scoped CRDs
     includedClusterScopedResources:
-      - events.orchi.cicibogaz.com
-      - labs.orchi.cicibogaz.com
-      - challenges.orchi.cicibogaz.com
+      - events.orchi.cyberorch.com
+      - labs.orchi.cyberorch.com
+      - challenges.orchi.cyberorch.com
     # Include PVC data
     snapshotVolumes: true
     # Time-to-live for backups
@@ -54,18 +54,18 @@ metadata:
   namespace: velero
   labels:
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: backup
+    orchi.cyberorch.com/component: backup
 spec:
   schedule: "0 */4 * * *"
   template:
     includedNamespaces:
       - orchi-system
     includedClusterScopedResources:
-      - events.orchi.cicibogaz.com
-      - labs.orchi.cicibogaz.com
-      - challenges.orchi.cicibogaz.com
+      - events.orchi.cyberorch.com
+      - labs.orchi.cyberorch.com
+      - challenges.orchi.cyberorch.com
     includedNamespacedResources:
-      - teams.orchi.cicibogaz.com
+      - teams.orchi.cyberorch.com
       - configmaps
       - secrets
     snapshotVolumes: false

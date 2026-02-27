@@ -209,7 +209,7 @@ spec:
                   name: orchi-jwt-keys
                   key: private-key.pem
             - name: CORS_ORIGINS
-              value: "https://orchi.io,https://app.orchi.io"
+              value: "https://cyberorch.com,https://app.cyberorch.com"
           resources:
             requests:
               cpu: 100m
@@ -302,11 +302,11 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - orchi.io
-        - api.orchi.io
+        - cyberorch.com
+        - api.cyberorch.com
       secretName: orchi-tls
   rules:
-    - host: orchi.io
+    - host: cyberorch.com
       http:
         paths:
           - path: /
@@ -316,7 +316,7 @@ spec:
                 name: orchi-frontend.orchi-frontend
                 port:
                   number: 80
-    - host: api.orchi.io
+    - host: api.cyberorch.com
       http:
         paths:
           - path: /

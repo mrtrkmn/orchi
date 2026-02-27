@@ -21,7 +21,7 @@ metadata:
   labels:
     app.kubernetes.io/name: orchi-operator
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: operator
+    orchi.cyberorch.com/component: operator
 spec:
   selector:
     matchLabels:
@@ -46,7 +46,7 @@ metadata:
   labels:
     app.kubernetes.io/name: amigo
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: amigo
+    orchi.cyberorch.com/component: amigo
 spec:
   selector:
     matchLabels:
@@ -71,7 +71,7 @@ metadata:
   labels:
     app.kubernetes.io/name: guacamole
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: guacamole
+    orchi.cyberorch.com/component: guacamole
 spec:
   selector:
     matchLabels:
@@ -96,7 +96,7 @@ metadata:
   labels:
     app.kubernetes.io/name: wireguard
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: vpn
+    orchi.cyberorch.com/component: vpn
 spec:
   selector:
     matchLabels:

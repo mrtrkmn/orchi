@@ -20,7 +20,7 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: orchi-operator
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: ingress
+    orchi.cyberorch.com/component: ingress
   annotations:
     # TLS certificate via cert-manager
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
@@ -34,10 +34,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - orchi.cicibogaz.com
-      secretName: orchi-tls-cert
+        - cyberorch.com
+      secretName: cyberorch-tls-cert
   rules:
-    - host: orchi.cicibogaz.com
+    - host: cyberorch.com
       http:
         paths:
           # Amigo — challenge submission frontend

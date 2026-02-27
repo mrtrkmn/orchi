@@ -57,6 +57,8 @@ resources:
   - networking/networkpolicy-api-frontend.yaml
   # VNC Proxy networking
   - networking/networkpolicy-vnc-proxy.yaml
+  # Cert-manager: Let's Encrypt + Cloudflare DNS-01 for wildcard TLS
+  - networking/cert-manager.yaml
 
   # Observability (requires prometheus-operator)
   - observability/prometheus-servicemonitor.yaml

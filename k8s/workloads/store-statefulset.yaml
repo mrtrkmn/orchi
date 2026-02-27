@@ -23,7 +23,7 @@ metadata:
     app.kubernetes.io/name: orchi-store
     app.kubernetes.io/managed-by: orchi-operator
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: store
+    orchi.cyberorch.com/component: store
 spec:
   serviceName: orchi-store
   replicas: 1
@@ -36,7 +36,7 @@ spec:
         app.kubernetes.io/name: orchi-store
         app.kubernetes.io/managed-by: orchi-operator
         app.kubernetes.io/part-of: orchi
-        orchi.cicibogaz.com/component: store
+        orchi.cyberorch.com/component: store
     spec:
       serviceAccountName: orchi-operator
       securityContext:
@@ -125,7 +125,7 @@ metadata:
   labels:
     app.kubernetes.io/name: orchi-store
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: store
+    orchi.cyberorch.com/component: store
 spec:
   type: ClusterIP
   clusterIP: None
