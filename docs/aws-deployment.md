@@ -196,7 +196,8 @@ The IAM role needs Kubernetes RBAC permissions. EKS supports two methods:
 #### Option A: EKS Access Entries (recommended, EKS 1.30+)
 
 EKS Access Entries are the modern, API-native way to manage cluster access without
-editing the `aws-auth` ConfigMap directly:
+editing the `aws-auth` ConfigMap directly. The cluster version 1.31 used in this
+guide fully supports Access Entries:
 
 ```bash
 # Create an access entry for the GitHub Actions role
