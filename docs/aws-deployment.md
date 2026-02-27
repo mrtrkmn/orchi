@@ -23,7 +23,7 @@ This guide walks through deploying the Orchi platform on Amazon EKS and configur
 - An AWS account with permissions to create EKS clusters, IAM roles, and VPCs
 - [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) configured with credentials
 - [eksctl](https://eksctl.io/installation/) for cluster creation
-- [kubectl](https://kubernetes.io/docs/tasks/tools/) 1.25+
+- [kubectl](https://kubernetes.io/docs/tasks/tools/) 1.28+
 - [Helm](https://helm.sh/docs/intro/install/) 3.x (for cluster dependencies)
 - A GitHub repository with Actions enabled
 
@@ -40,7 +40,7 @@ kind: ClusterConfig
 metadata:
   name: orchi-cluster
   region: eu-west-1    # change to your preferred region
-  version: "1.29"
+  version: "1.31"
 
 iam:
   withOIDC: true       # required for GitHub Actions OIDC auth
@@ -78,7 +78,7 @@ This takes 15–20 minutes. It creates the VPC, subnets, security groups, and no
 aws eks create-cluster \
   --name orchi-cluster \
   --region eu-west-1 \
-  --kubernetes-version 1.29 \
+  --kubernetes-version 1.31 \
   --role-arn arn:aws:iam::ACCOUNT_ID:role/eks-cluster-role \
   --resources-vpc-config subnetIds=subnet-xxx,subnet-yyy,securityGroupIds=sg-zzz
 
@@ -113,6 +113,8 @@ If you used `eksctl` with `withOIDC: true`, the EKS OIDC provider is already cre
 
 ```bash
 # Create GitHub OIDC provider in IAM
+# Note: As of 2024, AWS no longer requires the --thumbprint-list parameter
+# for GitHub Actions OIDC. AWS validates the certificate chain automatically.
 aws iam create-open-id-connect-provider \
   --url https://token.actions.githubusercontent.com \
   --client-id-list sts.amazonaws.com \
@@ -189,7 +191,36 @@ aws iam attach-role-policy \
 
 ### 2.3 Grant the IAM Role Access to the Cluster
 
-The IAM role needs to be mapped to a Kubernetes RBAC identity. Add an entry to the `aws-auth` ConfigMap:
+The IAM role needs Kubernetes RBAC permissions. EKS supports two methods:
+
+#### Option A: EKS Access Entries (recommended, EKS 1.30+)
+
+EKS Access Entries are the modern, API-native way to manage cluster access without
+editing the `aws-auth` ConfigMap directly:
+
+```bash
+# Create an access entry for the GitHub Actions role
+aws eks create-access-entry \
+  --cluster-name orchi-cluster \
+  --principal-arn arn:aws:iam::ACCOUNT_ID:role/orchi-github-actions \
+  --type STANDARD \
+  --region eu-west-1
+
+# Associate a policy (ClusterAdmin for deployments)
+aws eks associate-access-policy \
+  --cluster-name orchi-cluster \
+  --principal-arn arn:aws:iam::ACCOUNT_ID:role/orchi-github-actions \
+  --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy \
+  --access-scope type=cluster \
+  --region eu-west-1
+```
+
+> **Note:** For production, consider `AmazonEKSAdminPolicy` (namespace-scoped) instead
+> of `AmazonEKSClusterAdminPolicy` and scope access to the `orchi-system` namespace.
+
+#### Option B: aws-auth ConfigMap (legacy, all EKS versions)
+
+Add an entry to the `aws-auth` ConfigMap:
 
 ```bash
 # Check current auth map
@@ -216,14 +247,14 @@ EKS ships with the Amazon VPC CNI, which does **not** support NetworkPolicy. Ins
 
 ```bash
 # Install Calico for NetworkPolicy support
-kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico-vxlan.yaml
+kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.0/manifests/calico-vxlan.yaml
 ```
 
 Alternatively, use Cilium:
 
 ```bash
 helm repo add cilium https://helm.cilium.io/
-helm install cilium cilium/cilium --version 1.15.0 \
+helm install cilium cilium/cilium --version 1.16.5 \
   --namespace kube-system \
   --set eni.enabled=true \
   --set ipam.mode=eni \
@@ -452,7 +483,7 @@ aws iam attach-role-policy \
 # Install Velero with AWS plugin
 velero install \
   --provider aws \
-  --plugins velero/velero-plugin-for-aws:v1.9.0 \
+  --plugins velero/velero-plugin-for-aws:v1.11.0 \
   --bucket orchi-backups \
   --backup-location-config region=eu-west-1 \
   --snapshot-location-config region=eu-west-1 \
@@ -474,7 +505,22 @@ velero install \
 | NAT Gateway | Use a single NAT Gateway for dev; multi-AZ for prod |
 | Idle clusters | Scale node group to 0 when not running events |
 
-### Install Cluster Autoscaler
+### Install Cluster Autoscaler or Karpenter
+
+#### Option A: Karpenter (recommended for EKS)
+
+[Karpenter](https://karpenter.sh/) is the AWS-native node autoscaler that provisions
+right-sized nodes faster than Cluster Autoscaler:
+
+```bash
+helm repo add karpenter https://charts.karpenter.sh/
+helm install karpenter karpenter/karpenter \
+  --namespace kube-system \
+  --set settings.clusterName=orchi-cluster \
+  --set settings.clusterEndpoint=$(aws eks describe-cluster --name orchi-cluster --query "cluster.endpoint" --output text)
+```
+
+#### Option B: Cluster Autoscaler
 
 ```bash
 helm repo add autoscaler https://kubernetes.github.io/autoscaler
