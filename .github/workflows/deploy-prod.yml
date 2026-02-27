@@ -12,6 +12,14 @@ on:
           - staging
           - prod
         default: 'dev'
+      cluster_provider:
+        description: 'Cluster provider'
+        required: true
+        type: choice
+        options:
+          - kubeconfig
+          - aws
+        default: 'kubeconfig'
       dry_run:
         description: 'Dry run (diff only, no apply)'
         required: false
@@ -20,6 +28,7 @@ on:
 
   push:
     tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
@@ -27,6 +36,9 @@ jobs:
     name: Deploy to ${{ github.event.inputs.environment || 'prod' }}
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment || 'prod' }}
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout
@@ -37,41 +49,60 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             echo "environment=prod" >> "$GITHUB_OUTPUT"
+            echo "cluster_provider=aws" >> "$GITHUB_OUTPUT"
           else
             echo "environment=${{ github.event.inputs.environment }}" >> "$GITHUB_OUTPUT"
+            echo "cluster_provider=${{ github.event.inputs.cluster_provider }}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Configure kubectl
         uses: azure/setup-kubectl@v4
 
-      - name: Set up kubeconfig
+      # --- Option 1: Direct kubeconfig ---
+      - name: Set up kubeconfig (direct)
+        if: steps.env.outputs.cluster_provider == 'kubeconfig'
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
+
+      # --- Option 2: AWS EKS ---
+      - name: Configure AWS credentials
+        if: steps.env.outputs.cluster_provider == 'aws'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Set up kubeconfig (AWS EKS)
+        if: steps.env.outputs.cluster_provider == 'aws'
+        run: |
+          aws eks update-kubeconfig \
+            --name "${{ secrets.EKS_CLUSTER_NAME }}" \
+            --region "${{ secrets.AWS_REGION }}"
 
       - name: Validate manifests
         run: |
           kubectl kustomize k8s/overlays/${{ steps.env.outputs.environment }}
 
       - name: Diff changes
-        if: ${{ github.event.inputs.dry_run == 'true' }}
+        if: github.event.inputs.dry_run == 'true'
         run: |
           kubectl diff -k k8s/overlays/${{ steps.env.outputs.environment }} || true
 
       - name: Deploy
-        if: ${{ github.event.inputs.dry_run != 'true' }}
+        if: github.event.inputs.dry_run != 'true'
         run: |
           kubectl apply -k k8s/overlays/${{ steps.env.outputs.environment }}
 
       - name: Wait for rollout
-        if: ${{ github.event.inputs.dry_run != 'true' }}
+        if: github.event.inputs.dry_run != 'true'
         run: |
           kubectl -n orchi-system rollout status deployment/orchi-operator --timeout=120s
           kubectl -n orchi-system rollout status deployment/amigo --timeout=120s
 
       - name: Verify deployment
-        if: ${{ github.event.inputs.dry_run != 'true' }}
+        if: github.event.inputs.dry_run != 'true'
         run: |
           echo "=== Pods ==="
           kubectl -n orchi-system get pods

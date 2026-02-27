@@ -62,9 +62,14 @@ orchi-lab-{id} namespaces (one per lab):
 
 Go to **Actions → Deploy Orchi Platform → Run workflow**, select an environment (`dev`, `staging`, `prod`), and run. The workflow applies the Kustomize overlay to the cluster.
 
-Deployments also trigger automatically on version tags (`v*.*.*`), deploying to `prod`.
+Deployments also trigger automatically on version tags (e.g. `v1.0.0` or `1.0.0`), deploying to `prod`.
 
-> **Setup:** Add a `KUBECONFIG` repository secret (base64-encoded kubeconfig) for cluster access.
+> **Setup — choose one cluster provider:**
+>
+> | Provider | Required Secrets |
+> |---|---|
+> | `kubeconfig` | `KUBECONFIG` — base64-encoded kubeconfig |
+> | `aws` (EKS) | `AWS_ROLE_ARN` — IAM role ARN for OIDC, `AWS_REGION` — AWS region, `EKS_CLUSTER_NAME` — EKS cluster name |
 
 ### Create an Event via GitHub Actions
 

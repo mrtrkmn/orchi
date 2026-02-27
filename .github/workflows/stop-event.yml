@@ -16,12 +16,23 @@ on:
           - staging
           - prod
         default: 'dev'
+      cluster_provider:
+        description: 'Cluster provider'
+        required: true
+        type: choice
+        options:
+          - kubeconfig
+          - aws
+        default: 'kubeconfig'
 
 jobs:
   stop-event:
     name: Stop event "${{ github.event.inputs.event_tag }}"
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout
@@ -30,11 +41,28 @@ jobs:
       - name: Configure kubectl
         uses: azure/setup-kubectl@v4
 
-      - name: Set up kubeconfig
+      # --- Option 1: Direct kubeconfig ---
+      - name: Set up kubeconfig (direct)
+        if: github.event.inputs.cluster_provider == 'kubeconfig'
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
+
+      # --- Option 2: AWS EKS ---
+      - name: Configure AWS credentials
+        if: github.event.inputs.cluster_provider == 'aws'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Set up kubeconfig (AWS EKS)
+        if: github.event.inputs.cluster_provider == 'aws'
+        run: |
+          aws eks update-kubeconfig \
+            --name "${{ secrets.EKS_CLUSTER_NAME }}" \
+            --region "${{ secrets.AWS_REGION }}"
 
       - name: Show current event status
         run: |
