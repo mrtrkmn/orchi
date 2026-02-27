@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -133,19 +134,66 @@ func CORS(allowedOrigins []string) func(http.Handler) http.Handler {
 }
 
 // RateLimiter tracks request counts per key within a time window.
+// It periodically evicts inactive keys to prevent unbounded memory growth.
 type RateLimiter struct {
 	mu       sync.Mutex
 	requests map[string][]time.Time
 	limit    int
 	window   time.Duration
+	stop     chan struct{}
 }
 
 // NewRateLimiter creates a new rate limiter with the specified limit and window.
+// It starts a background goroutine that periodically evicts stale entries.
 func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
-	return &RateLimiter{
+	rl := &RateLimiter{
 		requests: make(map[string][]time.Time),
 		limit:    limit,
 		window:   window,
+		stop:     make(chan struct{}),
+	}
+	go rl.cleanup()
+	return rl
+}
+
+// cleanup periodically removes stale entries from the rate limiter map.
+func (rl *RateLimiter) cleanup() {
+	ticker := time.NewTicker(rl.window)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			rl.evictStale()
+		case <-rl.stop:
+			return
+		}
+	}
+}
+
+// Stop terminates the background cleanup goroutine.
+func (rl *RateLimiter) Stop() {
+	close(rl.stop)
+}
+
+// evictStale removes all keys whose request timestamps have fully expired.
+func (rl *RateLimiter) evictStale() {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	now := time.Now()
+	cutoff := now.Add(-rl.window)
+	for key, timestamps := range rl.requests {
+		var valid []time.Time
+		for _, t := range timestamps {
+			if t.After(cutoff) {
+				valid = append(valid, t)
+			}
+		}
+		if len(valid) == 0 {
+			delete(rl.requests, key)
+		} else {
+			rl.requests[key] = valid
+		}
 	}
 }
 
@@ -157,20 +205,26 @@ func (rl *RateLimiter) Allow(key string) bool {
 	now := time.Now()
 	cutoff := now.Add(-rl.window)
 
-	// Clean old entries
+	// Clean old entries for this key
 	var valid []time.Time
 	for _, t := range rl.requests[key] {
 		if t.After(cutoff) {
 			valid = append(valid, t)
 		}
 	}
-	rl.requests[key] = valid
+
+	// Evict key if no valid entries remain
+	if len(valid) == 0 {
+		delete(rl.requests, key)
+	} else {
+		rl.requests[key] = valid
+	}
 
 	if len(valid) >= rl.limit {
 		return false
 	}
 
-	rl.requests[key] = append(rl.requests[key], now)
+	rl.requests[key] = append(valid, now)
 	return true
 }
 
@@ -183,7 +237,14 @@ func RateLimit(limiter *RateLimiter) func(http.Handler) http.Handler {
 				key = strings.Split(forwarded, ",")[0]
 			}
 
-			if !limiter.Allow(strings.TrimSpace(key)) {
+			// Strip port from key so rate limiting is per-IP, not per-connection
+			if host, _, err := net.SplitHostPort(strings.TrimSpace(key)); err == nil {
+				key = host
+			} else {
+				key = strings.TrimSpace(key)
+			}
+
+			if !limiter.Allow(key) {
 				writeError(w, http.StatusTooManyRequests, "RATE_LIMITED", "Too many requests. Please try again later.")
 				return
 			}
