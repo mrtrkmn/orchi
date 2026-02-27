@@ -233,7 +233,7 @@ by building VNC proxying directly into the Orchi API gateway.
 The VNC proxy is a lightweight Go service that:
 
 1. **Accepts WebSocket connections** from the noVNC client in the browser
-2. **Validates JWT tokens** from the `Authorization` header or query parameter
+2. **Validates JWT tokens** from the `Authorization` header or WebSocket subprotocol
 3. **Checks authorization** — ensures the authenticated user/team owns the
    target lab namespace
 4. **Opens a VNC connection** to the KubeVirt VMI via the Kubernetes API
@@ -253,9 +253,6 @@ The VNC proxy is a lightweight Go service that:
 WebSocket: /vnc/{namespace}/{vmi-name}
   Headers:
     Authorization: ******
-  -OR-
-  Query:
-    ?token=<jwt-token>
 
   Response: WebSocket upgrade → VNC stream
 
@@ -286,7 +283,9 @@ interface DesktopViewerProps {
 }
 
 // The noVNC client connects to:
-// wss://desktop.cyberorch.com/vnc/{labNamespace}/{vmName}?token={jwt}
+// wss://desktop.cyberorch.com/vnc/{labNamespace}/{vmName}
+// and includes the JWT via the WebSocket subprotocol, e.g.:
+// new WebSocket(url, ['auth', token])
 ```
 
 noVNC is served as static assets from the frontend container, eliminating
@@ -300,7 +299,8 @@ the need for a separate Guacamole web application.
 1. User logs in via Orchi frontend → receives JWT
 2. User clicks "Open Desktop" for a VM
 3. Frontend opens noVNC component with WebSocket URL:
-   wss://desktop.cyberorch.com/vnc/orchi-lab-evt1-team42/kali-vm?token=<jwt>
+   wss://desktop.cyberorch.com/vnc/orchi-lab-evt1-team42/kali-vm
+   JWT is sent via WebSocket subprotocol (not in URL)
 4. VNC Proxy validates JWT:
    - Checks signature (RS256 with Orchi's public key)
    - Extracts claims: { team_id: "team42", event_id: "evt1", role: "participant" }

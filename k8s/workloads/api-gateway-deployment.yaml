@@ -3,6 +3,17 @@
 # REST API gateway that translates frontend REST calls to backend gRPC services.
 # Handles JWT authentication, CORS, rate limiting, and WebSocket connections.
 # Independently scalable — the primary ingress point for all API traffic.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: orchi-api-gateway
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-api-gateway
+    app.kubernetes.io/part-of: orchi
+    app.kubernetes.io/component: api-gateway
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:

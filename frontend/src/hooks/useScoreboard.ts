@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import type { ScoreUpdateMessage } from '../types/api';
 
 const WS_BASE_URL = import.meta.env.VITE_WS_URL ||
-  `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v1`;
+  `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//api.${window.location.hostname}/api/v1`;
 
 /**
  * Custom hook for WebSocket connection to the live scoreboard.
@@ -25,9 +25,9 @@ export function useScoreboard(
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
     const token = localStorage.getItem('orchi_token');
-    const url = `${WS_BASE_URL}/ws/scoreboard?event_id=${eventId}&token=${token}`;
+    const url = `${WS_BASE_URL}/ws/scoreboard?event_id=${eventId}`;
 
-    const ws = new WebSocket(url);
+    const ws = new WebSocket(url, ['orchi-auth', token || '']);
 
     ws.onopen = () => {
       setIsConnected(true);

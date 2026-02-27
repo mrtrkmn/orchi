@@ -62,7 +62,10 @@ spec:
                 port:
                   number: 8443
 ---
-# ExternalName service to route from orchi-system to orchi-frontend namespace
+# ExternalName service to route from orchi-system to orchi-frontend namespace.
+# NOTE: Traefik requires allowExternalNameServices=true to route to ExternalName
+# backends. Ensure this is enabled in the Traefik Helm values or static config.
+# Alternatively, deploy the Ingress in the orchi-frontend namespace directly.
 apiVersion: v1
 kind: Service
 metadata:

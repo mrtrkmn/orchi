@@ -106,23 +106,38 @@ func NewRouter(cfg Config) http.Handler {
 		middleware.RateLimit(apiLimiter),
 	))
 
-	// Challenges
+	// Challenges and related event sub-routes
 	mux.Handle("/api/v1/events/", chain(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			path := r.URL.Path
 			switch {
 			case strings.HasSuffix(path, "/challenges"):
-				challengeHandler.List(w, r)
-			case strings.HasSuffix(path, "/teams"):
-				if r.Method == "POST" {
-					teamHandler.Create(w, r)
+				if r.Method == http.MethodGet {
+					challengeHandler.List(w, r)
 				} else {
+					w.WriteHeader(http.StatusMethodNotAllowed)
+				}
+			case strings.HasSuffix(path, "/teams"):
+				switch r.Method {
+				case http.MethodPost:
+					teamHandler.Create(w, r)
+				case http.MethodGet:
 					teamHandler.List(w, r)
+				default:
+					w.WriteHeader(http.StatusMethodNotAllowed)
 				}
 			case strings.HasSuffix(path, "/scoreboard"):
-				scoreboardHandler.Get(w, r)
+				if r.Method == http.MethodGet {
+					scoreboardHandler.Get(w, r)
+				} else {
+					w.WriteHeader(http.StatusMethodNotAllowed)
+				}
 			default:
-				eventHandler.Get(w, r)
+				if r.Method == http.MethodGet {
+					eventHandler.Get(w, r)
+				} else {
+					w.WriteHeader(http.StatusMethodNotAllowed)
+				}
 			}
 		}),
 		jwtMiddleware,

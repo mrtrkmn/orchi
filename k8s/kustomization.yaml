@@ -21,6 +21,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+# NOTE: The global namespace setting below applies to all namespaced resources.
+# Resources intended for other namespaces (e.g., orchi-frontend) should either:
+#   1. Be moved to separate kustomizations/overlays per namespace, or
+#   2. Have their namespace explicitly set via strategic merge patches.
+# The frontend-deployment.yaml and networkpolicy-api-frontend.yaml are designed
+# for the orchi-frontend namespace — use overlays to override the namespace.
 namespace: orchi-system
 
 resources:
