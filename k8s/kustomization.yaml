@@ -46,6 +46,8 @@ resources:
   # Decoupled architecture workloads
   - workloads/frontend-deployment.yaml
   - workloads/api-gateway-deployment.yaml
+  # VNC Proxy (Guacamole replacement) — see docs/architecture/guacamole-replacement.md
+  - workloads/vnc-proxy-deployment.yaml
 
   # Networking
   - networking/ingress.yaml
@@ -53,6 +55,8 @@ resources:
   # Decoupled architecture networking
   - networking/ingress-decoupled.yaml
   - networking/networkpolicy-api-frontend.yaml
+  # VNC Proxy networking
+  - networking/networkpolicy-vnc-proxy.yaml
 
   # Observability (requires prometheus-operator)
   - observability/prometheus-servicemonitor.yaml

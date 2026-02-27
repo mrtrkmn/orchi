@@ -23,6 +23,7 @@ spec:
     - hosts:
         - orchi.io
         - api.orchi.io
+        - desktop.orchi.io
       secretName: orchi-tls-cert
   rules:
     # Frontend SPA — routed via ExternalName service in orchi-system
@@ -47,6 +48,19 @@ spec:
                 name: orchi-api-gateway
                 port:
                   number: 8080
+    # VNC Proxy — browser-based remote desktop via noVNC + WebSocket
+    # Replaces Guacamole for browser-based VM access.
+    # See docs/architecture/guacamole-replacement.md
+    - host: desktop.orchi.io
+      http:
+        paths:
+          - path: /vnc
+            pathType: Prefix
+            backend:
+              service:
+                name: orchi-vnc-proxy
+                port:
+                  number: 8443
 ---
 # ExternalName service to route from orchi-system to orchi-frontend namespace
 apiVersion: v1

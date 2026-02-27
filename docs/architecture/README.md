@@ -42,7 +42,7 @@ versioned REST APIs and WebSocket connections.
               └──────────────────────────────────────────────────────────┘
                            │                            │
               ┌────────────▼──────────┐    ┌────────────▼──────────┐
-              │  WireGuard VPN        │    │  Guacamole RDP        │
+              │  WireGuard VPN        │    │  VNC Proxy (noVNC)    │
               │  (Per-team tunnels)   │    │  (Browser desktops)   │
               └───────────────────────┘    └───────────────────────┘
 ```
@@ -95,7 +95,7 @@ versioned REST APIs and WebSocket connections.
   - Lab environment provisioning via Kubernetes CRDs
   - Exercise container lifecycle (start, stop, reset)
   - VPN configuration generation (WireGuard)
-  - RDP session management (Guacamole)
+  - VNC session management (VNC Proxy, replacing Guacamole — see [guacamole-replacement.md](guacamole-replacement.md))
   - Resource quota enforcement per team
 
 ### Store
@@ -252,7 +252,7 @@ Frontend                    API Gateway
 | Lab Service | HPA (CPU) | 2 | 5 |
 | Store | StatefulSet | 1 | 3 (with replication) |
 | WireGuard | DaemonSet | 1 per node | 1 per node |
-| Guacamole | HPA (connections) | 1 | 5 |
+| VNC Proxy | HPA (CPU/connections) | 2 | 20 |
 
 For a 500+ concurrent team competition:
 - API Gateway: 5-10 replicas

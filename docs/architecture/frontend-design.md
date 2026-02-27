@@ -153,7 +153,7 @@ App
 │   │   │   ├── DownloadButton
 │   │   │   └── ConnectionInstructions
 │   │   └── BrowserAccessPanel
-│   │       └── GuacamoleEmbed (iframe)
+│   │       └── DesktopViewer (noVNC WebSocket)
 │   │
 │   ├── TeamPage
 │   │   ├── TeamInfo
