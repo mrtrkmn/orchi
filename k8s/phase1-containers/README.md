@@ -1,0 +1,198 @@
+# Phase 1 — Container Migration
+
+Migrate all Docker-based challenge containers into Kubernetes-native workloads.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Kubernetes Cluster                            │
+│                                                                 │
+│  ┌───────────────────────── Namespace: orchi-lab-{id} ───────┐  │
+│  │                                                           │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐       │  │
+│  │  │ Deployment  │  │ Deployment  │  │ Deployment  │       │  │
+│  │  │ challenge-a │  │ challenge-b │  │ challenge-c │       │  │
+│  │  │             │  │             │  │             │       │  │
+│  │  │  ┌───────┐  │  │  ┌───────┐  │  │  ┌───────┐  │       │  │
+│  │  │  │  Pod  │  │  │  │  Pod  │  │  │  │  Pod  │  │       │  │
+│  │  │  └───┬───┘  │  │  └───┬───┘  │  │  └───┬───┘  │       │  │
+│  │  └──────┼──────┘  └──────┼──────┘  └──────┼──────┘       │  │
+│  │         │                │                │               │  │
+│  │  ┌──────┴──────┐  ┌──────┴──────┐  ┌──────┴──────┐       │  │
+│  │  │  Service    │  │  Service    │  │  Service    │       │  │
+│  │  │ ClusterIP   │  │ ClusterIP   │  │ ClusterIP   │       │  │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘       │  │
+│  │                                                           │  │
+│  │  ┌─────────────┐  ┌─────────────┐                         │  │
+│  │  │  ConfigMap  │  │   Secret    │                         │  │
+│  │  │  (config)   │  │  (flags)    │                         │  │
+│  │  └─────────────┘  └─────────────┘                         │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │  Challenge CRD (orchi.cicibogaz.com/v1alpha1)             │  │
+│  │  orchi-operator watches CRDs → creates Deployments etc.   │  │
+│  └────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Files
+
+| File | Purpose |
+|------|---------|
+| `namespace.yaml` | Lab namespace with labels and pod security standards |
+| `challenge-deployment.yaml` | Challenge Deployment with probes, resource limits, security context |
+| `challenge-service.yaml` | ClusterIP Service for intra-lab communication |
+| `challenge-configmap.yaml` | Non-sensitive challenge configuration |
+| `challenge-secret.yaml` | Flags and credentials |
+| `challenge-crd.yaml` | Challenge CustomResourceDefinition schema |
+
+## Legacy-to-Kubernetes Mapping
+
+| Legacy (Go code) | Kubernetes Resource |
+|---|---|
+| `docker.NewContainer(conf)` | `Deployment` + `Pod` |
+| `docker.ContainerConfig.Image` | `spec.containers[].image` |
+| `docker.ContainerConfig.EnvVars` | `ConfigMap` + `Secret` env refs |
+| `docker.Resources{MemoryMB, CPU}` | `resources.requests` / `resources.limits` |
+| `docker.ContainerConfig.DNS` | CoreDNS (cluster DNS, automatic) |
+| `docker.ContainerConfig.Labels` | `metadata.labels` |
+| `docker.Network.Connect(container)` | Multus `NetworkAttachmentDefinition` annotation |
+| `store.Exercise` | `Challenge` CRD |
+| `store.ExerciseInstanceConfig` | `Challenge` CRD `.spec` |
+| `store.ChildrenChalConfig` | `Challenge` CRD `.spec.flag` |
+| `store.EnvVarConfig` | `Challenge` CRD `.spec.envVars` |
+| `store.RecordConfig` | `Challenge` CRD `.spec.dnsRecords` |
+| `exercise.Environment` | Kubernetes Namespace (one per lab) |
+| `exercise.NewExercise()` | orchi-operator reconcile loop |
+
+## Namespace Strategy
+
+**One namespace per lab.** Every lab instance gets a dedicated namespace:
+
+```
+orchi-lab-{lab-id}
+```
+
+- `lab-id` is a unique identifier generated by the orchi-operator (e.g. `orchi-lab-a1b2c3`)
+- All challenge pods, services, secrets, and configmaps live inside the lab namespace
+- Deleting the namespace cascades to delete all contained resources
+- Namespace labels enable NetworkPolicy enforcement and resource quota targeting
+
+**Required labels on every namespace:**
+```yaml
+labels:
+  app.kubernetes.io/managed-by: orchi-operator
+  app.kubernetes.io/part-of: orchi
+  orchi.cicibogaz.com/lab-id: "{lab-id}"
+  orchi.cicibogaz.com/component: lab
+```
+
+## Challenge CRD
+
+The `Challenge` CRD (`challenges.orchi.cicibogaz.com`) replaces the legacy `store.Exercise` model.
+
+**Example CR:**
+```yaml
+apiVersion: orchi.cicibogaz.com/v1alpha1
+kind: Challenge
+metadata:
+  name: sql-injection
+  namespace: orchi-lab-a1b2c3
+spec:
+  tag: sql-injection
+  name: "SQL Injection Lab"
+  image: registry.cicibogaz.com/orchi/challenges/sql-injection:1.0.0
+  category: web
+  difficulty: medium
+  points: 100
+  flag:
+    type: dynamic
+    envVar: CHALLENGE_FLAG
+  ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+```
+
+The orchi-operator reconciles this into a Deployment, Service, ConfigMap, and Secret.
+
+## Migration Steps from Docker
+
+### Step 1 — Inventory existing challenges
+```bash
+# List all challenge container images from existing exercise configs
+grep -r '"image"' exercises/*.yml | sort -u
+```
+
+### Step 2 — Build container images for Kubernetes
+Existing Docker images work as-is. Ensure each image:
+- Exposes a health-check endpoint (`/healthz`) for probes
+- Reads flags from environment variables (already the pattern in legacy code)
+- Runs as non-root (UID 1000) if possible
+
+### Step 3 — Push images to registry
+```bash
+docker tag challenge-image:latest registry.cicibogaz.com/orchi/challenges/challenge-image:1.0.0
+docker push registry.cicibogaz.com/orchi/challenges/challenge-image:1.0.0
+```
+
+### Step 4 — Install Challenge CRD
+```bash
+kubectl apply -f challenge-crd.yaml
+```
+
+### Step 5 — Create a lab namespace
+```bash
+kubectl apply -f namespace.yaml
+```
+
+### Step 6 — Deploy challenges
+```bash
+kubectl apply -f challenge-configmap.yaml
+kubectl apply -f challenge-secret.yaml
+kubectl apply -f challenge-deployment.yaml
+kubectl apply -f challenge-service.yaml
+```
+
+### Step 7 — Verify
+```bash
+kubectl -n orchi-lab-example get pods
+kubectl -n orchi-lab-example get svc
+kubectl -n orchi-lab-example describe challenge sql-injection
+```
+
+### Step 8 — Cutover
+Once verified, update the orchi daemon to create Challenge CRs instead of calling `docker.NewContainer()`. The orchi-operator handles the rest.
+
+## Rollback Strategy
+
+| Step | Action |
+|------|--------|
+| 1 | Stop creating new labs via Kubernetes path |
+| 2 | Existing K8s labs: `kubectl delete namespace orchi-lab-{id}` cleans up everything |
+| 3 | Re-enable legacy Docker path in orchi daemon config |
+| 4 | Legacy `docker.NewContainer()` + `docker.Network.Connect()` resumes |
+| 5 | Keep Challenge CRD installed (does nothing without operator running) |
+
+**Key point:** The legacy Go code (`exercise.NewExercise()`, `docker.NewContainer()`) is not deleted during migration. It is feature-flagged. Rolling back means flipping the flag.
+
+## Risks and Mitigation
+
+| Risk | Impact | Likelihood | Mitigation |
+|------|--------|------------|------------|
+| Challenge image incompatible with non-root | Medium | Medium | Test each image with `runAsUser: 1000`; add writable `/tmp` via emptyDir |
+| No health endpoint in legacy images | Low | High | Add a simple TCP probe (`tcpSocket`) as fallback instead of HTTP |
+| Resource limits too tight cause OOMKill | Medium | Medium | Start with generous limits (1Gi memory), tune down based on metrics |
+| DNS resolution differs from legacy DHCP/DNS | Medium | Low | Kubernetes CoreDNS handles `svc.cluster.local` automatically; lab-internal DNS records go into ConfigMap |
+| Multus secondary network not ready | High | Low | Challenge pods work on primary cluster network; Multus is additive |
+| Legacy flag format (`HKN{...}`) vs new (`ORCHI{...}`) | Low | High | Support both formats during transition; update flag generation in operator |
+| Namespace deletion orphans external state | Low | Low | Use finalizers on Challenge CRs to clean up any external resources |

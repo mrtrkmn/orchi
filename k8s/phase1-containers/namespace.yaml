@@ -1,0 +1,24 @@
+# ==============================================================================
+# Orchi Lab Namespace
+# ==============================================================================
+# Each lab gets its own namespace for full isolation.
+# Deleting the namespace removes all lab resources automatically.
+# Naming convention: orchi-lab-{lab-id}
+# ==============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: orchi-lab-example
+  labels:
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/lab-id: "example"
+    orchi.cicibogaz.com/component: lab
+    # Pod security standard - restricted baseline
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+  annotations:
+    orchi.cicibogaz.com/created-by: "orchi-operator"
+    orchi.cicibogaz.com/description: "Isolated lab environment"
+    orchi.cicibogaz.com/max-duration: "8h"
