@@ -20,14 +20,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aau-network-security/haaukins/virtual/vbox"
+	"github.com/mrtrkmn/orchi/virtual/vbox"
 
-	"github.com/aau-network-security/haaukins/store"
+	"github.com/mrtrkmn/orchi/store"
 
-	"github.com/aau-network-security/haaukins/svcs"
-	"github.com/aau-network-security/haaukins/svcs/amigo"
-	"github.com/aau-network-security/haaukins/virtual"
-	"github.com/aau-network-security/haaukins/virtual/docker"
+	"github.com/mrtrkmn/orchi/svcs"
+	"github.com/mrtrkmn/orchi/svcs/amigo"
+	"github.com/mrtrkmn/orchi/virtual"
+	"github.com/mrtrkmn/orchi/virtual/docker"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog/log"
@@ -187,7 +187,7 @@ func (guac *guacamole) create(ctx context.Context, eventTag string) error {
 	guacdAlias := uuid.New().String()
 	dbAlias := uuid.New().String()
 	containers["web"] = docker.NewContainer(docker.ContainerConfig{
-		Image: "registry.gitlab.com/haaukins/core-utils/guacamole",
+		Image: "registry.gitlab.com/orchi/core-utils/guacamole",
 		EnvVars: map[string]string{
 			"MYSQL_DATABASE": "guacamole_db",
 			"MYSQL_USER":     "guacamole_user",

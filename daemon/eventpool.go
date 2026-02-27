@@ -9,11 +9,11 @@ import (
 	"strings"
 	"sync"
 
-	wg "github.com/aau-network-security/haaukins/network/vpn"
+	wg "github.com/mrtrkmn/orchi/network/vpn"
 
-	"github.com/aau-network-security/haaukins/svcs/guacamole"
+	"github.com/mrtrkmn/orchi/svcs/guacamole"
 
-	"github.com/aau-network-security/haaukins/store"
+	"github.com/mrtrkmn/orchi/store"
 )
 
 type eventPool struct {

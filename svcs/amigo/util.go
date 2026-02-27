@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/aau-network-security/haaukins/store"
+	"github.com/mrtrkmn/orchi/store"
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/websocket"
 )

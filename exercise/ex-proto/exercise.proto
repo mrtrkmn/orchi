@@ -1,6 +1,6 @@
 syntax = "proto3";
 package exercise;
-option go_package = "github.com/aau-network-security/haaukins-exercises/proto";
+option go_package = "github.com/mrtrkmn/orchi-exercises/proto";
 service ExerciseStore{
     rpc GetExercises(Empty) returns (GetExercisesResponse) {}
     rpc GetExerciseByTags(GetExerciseByTagsRequest) returns (GetExercisesResponse) {}

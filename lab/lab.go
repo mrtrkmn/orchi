@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aau-network-security/haaukins/exercise"
-	"github.com/aau-network-security/haaukins/store"
-	"github.com/aau-network-security/haaukins/virtual"
-	"github.com/aau-network-security/haaukins/virtual/docker"
-	"github.com/aau-network-security/haaukins/virtual/vbox"
+	"github.com/mrtrkmn/orchi/exercise"
+	"github.com/mrtrkmn/orchi/store"
+	"github.com/mrtrkmn/orchi/virtual"
+	"github.com/mrtrkmn/orchi/virtual/docker"
+	"github.com/mrtrkmn/orchi/virtual/vbox"
 	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/rs/zerolog/log"
 )

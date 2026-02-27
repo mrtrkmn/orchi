@@ -1,0 +1,24 @@
+# ==============================================================================
+# Default Deny NetworkPolicy
+# ==============================================================================
+# Applied to every lab namespace. Blocks all ingress and egress by default.
+# Subsequent policies whitelist only the traffic needed for labs to function.
+#
+# Replaces: iptables DOCKER-USER REJECT rule (guacamole/iptables.go)
+#   ipTab.createRejectRule(labSubnet) → this default-deny policy
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: orchi-lab-example
+  labels:
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: network-policy
+    orchi.cicibogaz.com/lab-id: "example"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress

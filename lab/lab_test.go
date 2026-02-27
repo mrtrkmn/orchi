@@ -9,10 +9,10 @@ import (
 
 	"testing"
 
-	"github.com/aau-network-security/haaukins/exercise"
-	"github.com/aau-network-security/haaukins/virtual/docker"
-	"github.com/aau-network-security/haaukins/virtual/vbox"
-	"github.com/aau-network-security/haaukins/store"
+	"github.com/mrtrkmn/orchi/exercise"
+	"github.com/mrtrkmn/orchi/virtual/docker"
+	"github.com/mrtrkmn/orchi/virtual/vbox"
+	"github.com/mrtrkmn/orchi/store"
 )
 
 type testDockerHost struct {

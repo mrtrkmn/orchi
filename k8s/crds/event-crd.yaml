@@ -1,0 +1,225 @@
+# ==============================================================================
+# Orchi Event CRD
+# ==============================================================================
+# CustomResourceDefinition for Event resources.
+# Replaces legacy store.EventConfig / store.Event models.
+# An Event is a top-level orchestration unit: it owns a Lab namespace,
+# manages team registration, VPN access, and challenge lifecycle.
+#
+# Legacy mapping:
+#   store.EventConfig.Name       → spec.name
+#   store.EventConfig.Tag        → spec.tag
+#   store.EventConfig.Host       → spec.host
+#   store.EventConfig.Capacity   → spec.capacity
+#   store.EventConfig.Available  → status.available
+#   store.EventConfig.Status     → status.phase (Running/Suspended/Booked/Closed)
+#   store.EventConfig.OnlyVPN    → spec.vpn.required
+#   store.EventConfig.SecretKey  → spec.secretKey (secretRef)
+#   store.EventConfig.Lab        → spec.lab (inline LabSpec)
+#   store.Event.WireGuardConfig  → spec.vpn
+#   store.EventConfig.CreatedBy  → spec.createdBy
+# ==============================================================================
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: events.orchi.cicibogaz.com
+  labels:
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+spec:
+  group: orchi.cicibogaz.com
+  names:
+    kind: Event
+    listKind: EventList
+    plural: events
+    singular: event
+    shortNames:
+      - ev
+    categories:
+      - orchi
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Name
+          type: string
+          jsonPath: .spec.name
+        - name: Tag
+          type: string
+          jsonPath: .spec.tag
+        - name: Capacity
+          type: integer
+          jsonPath: .spec.capacity
+        - name: Available
+          type: integer
+          jsonPath: .status.available
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          description: "Event represents a lab event that groups teams, challenges, and infrastructure."
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+              required:
+                - tag
+                - name
+                - capacity
+                - lab
+              properties:
+                tag:
+                  type: string
+                  description: "Unique tag identifier for this event (maps to store.Tag)."
+                  pattern: "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+                  minLength: 2
+                  maxLength: 63
+                name:
+                  type: string
+                  description: "Human-readable event name."
+                  maxLength: 256
+                host:
+                  type: string
+                  description: "Hostname where this event is served."
+                capacity:
+                  type: integer
+                  description: "Maximum number of teams that can join."
+                  minimum: 1
+                  maximum: 10000
+                createdBy:
+                  type: string
+                  description: "Username of the event creator."
+                secretKeyRef:
+                  type: object
+                  description: "Reference to a Secret containing the event signup key."
+                  properties:
+                    name:
+                      type: string
+                    key:
+                      type: string
+                      default: "signup-key"
+                startedAt:
+                  type: string
+                  format: date-time
+                  description: "Scheduled start time."
+                finishExpected:
+                  type: string
+                  format: date-time
+                  description: "Expected finish time."
+                vpn:
+                  type: object
+                  description: "VPN configuration for the event."
+                  properties:
+                    required:
+                      type: boolean
+                      description: "If true, teams must connect via VPN (maps to OnlyVPN)."
+                      default: false
+                    address:
+                      type: string
+                      description: "VPN server address."
+                    endpointPort:
+                      type: integer
+                      description: "VPN endpoint port."
+                      minimum: 1
+                      maximum: 65535
+                lab:
+                  type: object
+                  description: "Lab configuration — which challenges and frontends to deploy."
+                  required:
+                    - exercises
+                  properties:
+                    exercises:
+                      type: array
+                      description: "List of challenge tags to include in this event."
+                      items:
+                        type: string
+                    disabledExercises:
+                      type: array
+                      description: "Challenge tags that are created but not started by default."
+                      items:
+                        type: string
+                    frontends:
+                      type: array
+                      description: "Frontend VM configurations (Guacamole RDP targets)."
+                      items:
+                        type: object
+                        required:
+                          - image
+                        properties:
+                          image:
+                            type: string
+                          memoryMB:
+                            type: integer
+                            minimum: 256
+                            default: 2048
+                          cpu:
+                            type: number
+                            minimum: 0.1
+                            default: 1.0
+                disabledChallenges:
+                  type: object
+                  description: "Map of parent challenge tag → list of disabled child tags."
+                  x-kubernetes-preserve-unknown-fields: true
+            status:
+              type: object
+              description: "Observed state of the Event."
+              properties:
+                phase:
+                  type: string
+                  description: "Current lifecycle phase."
+                  enum:
+                    - Pending
+                    - Running
+                    - Suspended
+                    - Booked
+                    - Closed
+                    - Failed
+                available:
+                  type: integer
+                  description: "Number of remaining team slots."
+                labNamespace:
+                  type: string
+                  description: "Namespace created for this event's lab."
+                teamCount:
+                  type: integer
+                  description: "Number of teams currently registered."
+                startedAt:
+                  type: string
+                  format: date-time
+                finishedAt:
+                  type: string
+                  format: date-time
+                message:
+                  type: string
+                  description: "Human-readable status message."
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                        enum: ["True", "False", "Unknown"]
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                      reason:
+                        type: string
+                      message:
+                        type: string

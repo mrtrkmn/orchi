@@ -1,0 +1,117 @@
+# ==============================================================================
+# Amigo Deployment
+# ==============================================================================
+# Amigo is the challenge submission frontend — the web UI where teams log in,
+# view challenges, submit flags, and track progress.
+#
+# Legacy mapping:
+#   svcs/amigo/amigo.go         → This Deployment
+#   amigo.Amigo.TeamStore       → Team CRs via K8s API (operator handles state)
+#   amigo recaptcha verification→ Env var ORCHI_RECAPTCHA_KEY
+#   amigo table/resources       → Static assets in container image
+#
+# Architecture: Amigo runs in orchi-system namespace. It communicates with
+# the orchi-operator (or directly with K8s API) to verify flags and update
+# team challenge state.
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: amigo
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: amigo
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: amigo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: amigo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: amigo
+        app.kubernetes.io/managed-by: orchi-operator
+        app.kubernetes.io/part-of: orchi
+        orchi.cicibogaz.com/component: amigo
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: amigo
+          image: ghcr.io/mrtrkmn/orchi/amigo:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: ORCHI_RECAPTCHA_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: orchi-operator-secrets
+                  key: ORCHI_RECAPTCHA_KEY
+                  optional: true
+            - name: ORCHI_OPERATOR_URL
+              value: "http://orchi-operator:8080"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi
+---
+# ==============================================================================
+# Amigo Service
+# ==============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: amigo
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: amigo
+    app.kubernetes.io/part-of: orchi
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: amigo
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP

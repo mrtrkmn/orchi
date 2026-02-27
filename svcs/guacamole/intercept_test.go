@@ -14,12 +14,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aau-network-security/haaukins/store"
+	"github.com/mrtrkmn/orchi/store"
 
-	pb "github.com/aau-network-security/haaukins/store/proto"
-	"github.com/aau-network-security/haaukins/svcs/amigo"
-	"github.com/aau-network-security/haaukins/svcs/guacamole"
-	mockserver "github.com/aau-network-security/haaukins/testing"
+	pb "github.com/mrtrkmn/orchi/store/proto"
+	"github.com/mrtrkmn/orchi/svcs/amigo"
+	"github.com/mrtrkmn/orchi/svcs/guacamole"
+	mockserver "github.com/mrtrkmn/orchi/testing"
 	"google.golang.org/grpc"
 )
 

@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/aau-network-security/haaukins/client/cli"
-	pb "github.com/aau-network-security/haaukins/daemon/proto"
+	"github.com/mrtrkmn/orchi/client/cli"
+	pb "github.com/mrtrkmn/orchi/daemon/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 )

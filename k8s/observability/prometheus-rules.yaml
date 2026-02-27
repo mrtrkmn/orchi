@@ -1,0 +1,202 @@
+# ==============================================================================
+# Prometheus Alerting Rules
+# ==============================================================================
+# Alerting rules for the orchi platform. These replace the legacy daemon's
+# implicit failure modes (crash → restart, silent failures) with explicit
+# alerts that fire when something goes wrong.
+#
+# Legacy mapping:
+#   daemon crash (no alerting)        → OrchiOperatorDown alert
+#   eventPool stale events            → OrchiEventStuck alert
+#   MonitorHost() high CPU/Memory     → OrchiHighMemoryUsage / OrchiHighCPUUsage
+#   No capacity tracking              → OrchiLabNamespaceQuotaExhausted alert
+#   store gRPC connection failures    → OrchiStoreUnavailable alert
+#
+# Prerequisites:
+#   - prometheus-operator (kube-prometheus-stack) installed
+#   - PrometheusRule CRD available
+# ==============================================================================
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: orchi-alerts
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-alerts
+    app.kubernetes.io/part-of: orchi
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+    # ========================================================================
+    # Operator Health
+    # ========================================================================
+    - name: orchi-operator
+      rules:
+        - alert: OrchiOperatorDown
+          expr: |
+            absent(up{job="orchi-operator", namespace="orchi-system"} == 1)
+          for: 5m
+          labels:
+            severity: critical
+            component: operator
+          annotations:
+            summary: "Orchi operator is down"
+            description: "The orchi-operator pod has not been reporting metrics for 5 minutes. No new labs or events can be created."
+
+        - alert: OrchiOperatorHighRestartCount
+          expr: |
+            increase(kube_pod_container_status_restarts_total{namespace="orchi-system", container="operator"}[1h]) > 3
+          for: 0m
+          labels:
+            severity: warning
+            component: operator
+          annotations:
+            summary: "Orchi operator restarting frequently"
+            description: "The orchi-operator has restarted {{ $value }} times in the last hour."
+
+        - alert: OrchiOperatorReconcileErrors
+          expr: |
+            increase(controller_runtime_reconcile_errors_total{namespace="orchi-system"}[15m]) > 10
+          for: 5m
+          labels:
+            severity: warning
+            component: operator
+          annotations:
+            summary: "Orchi operator reconcile errors"
+            description: "The operator has {{ $value }} reconcile errors in the last 15 minutes."
+
+    # ========================================================================
+    # Lab & Event Lifecycle
+    # ========================================================================
+    - name: orchi-labs
+      rules:
+        - alert: OrchiEventStuck
+          expr: |
+            (orchi_event_phase{phase="Provisioning"} == 1)
+            and
+            (time() - orchi_event_phase_transition_timestamp > 600)
+          for: 10m
+          labels:
+            severity: warning
+            component: lab
+          annotations:
+            summary: "Event stuck in Provisioning"
+            description: "Event {{ $labels.event }} has been in Provisioning state for over 10 minutes."
+
+        - alert: OrchiLabPodNotReady
+          expr: |
+            kube_pod_status_ready{namespace=~"orchi-lab-.*", condition="true"} == 0
+          for: 10m
+          labels:
+            severity: warning
+            component: lab
+          annotations:
+            summary: "Lab pod not ready"
+            description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has not been ready for 10 minutes."
+
+        - alert: OrchiLabNamespaceCount
+          expr: |
+            count(kube_namespace_labels{label_orchi_cicibogaz_com_component="lab"}) > 100
+          for: 0m
+          labels:
+            severity: warning
+            component: lab
+          annotations:
+            summary: "High number of lab namespaces"
+            description: "There are {{ $value }} active lab namespaces. Consider cleaning up finished events."
+
+    # ========================================================================
+    # Workload Health
+    # ========================================================================
+    - name: orchi-workloads
+      rules:
+        - alert: OrchiGuacamoleDown
+          expr: |
+            absent(up{job="guacamole", namespace="orchi-system"} == 1)
+          for: 5m
+          labels:
+            severity: critical
+            component: guacamole
+          annotations:
+            summary: "Guacamole is down"
+            description: "Guacamole web service is unreachable. Remote desktop access is unavailable."
+
+        - alert: OrchiAmigoDown
+          expr: |
+            absent(up{job="amigo", namespace="orchi-system"} == 1)
+          for: 5m
+          labels:
+            severity: critical
+            component: amigo
+          annotations:
+            summary: "Amigo is down"
+            description: "Amigo frontend is unreachable. Teams cannot submit flags."
+
+        - alert: OrchiWireGuardDown
+          expr: |
+            absent(up{job="wireguard", namespace="orchi-system"} == 1)
+          for: 5m
+          labels:
+            severity: critical
+            component: vpn
+          annotations:
+            summary: "WireGuard VPN is down"
+            description: "WireGuard VPN gateway is unreachable. VPN-based lab access is unavailable."
+
+        - alert: OrchiStoreUnavailable
+          expr: |
+            absent(up{job="orchi-store", namespace="orchi-system"} == 1)
+          for: 3m
+          labels:
+            severity: critical
+            component: store
+          annotations:
+            summary: "Store service is unavailable"
+            description: "The orchi-store database service is not responding. Event and team data is inaccessible."
+
+    # ========================================================================
+    # Resource Usage
+    # ========================================================================
+    - name: orchi-resources
+      rules:
+        - alert: OrchiHighMemoryUsage
+          expr: |
+            container_memory_working_set_bytes{namespace="orchi-system", container!=""}
+            / on(namespace, pod, container)
+            kube_pod_container_resource_limits{resource="memory", namespace="orchi-system"}
+            > 0.9
+          for: 10m
+          labels:
+            severity: warning
+            component: resources
+          annotations:
+            summary: "High memory usage in orchi-system"
+            description: "Container {{ $labels.container }} in pod {{ $labels.pod }} is using over 90% of its memory limit."
+
+        - alert: OrchiHighCPUUsage
+          expr: |
+            rate(container_cpu_usage_seconds_total{namespace="orchi-system", container!=""}[5m])
+            / on(namespace, pod, container)
+            kube_pod_container_resource_limits{resource="cpu", namespace="orchi-system"}
+            > 0.9
+          for: 10m
+          labels:
+            severity: warning
+            component: resources
+          annotations:
+            summary: "High CPU usage in orchi-system"
+            description: "Container {{ $labels.container }} in pod {{ $labels.pod }} is using over 90% of its CPU limit."
+
+        - alert: OrchiPVCNearlyFull
+          expr: |
+            kubelet_volume_stats_used_bytes{namespace="orchi-system"}
+            / kubelet_volume_stats_capacity_bytes{namespace="orchi-system"}
+            > 0.85
+          for: 15m
+          labels:
+            severity: warning
+            component: storage
+          annotations:
+            summary: "PVC nearly full"
+            description: "PVC {{ $labels.persistentvolumeclaim }} in orchi-system is {{ $value | humanizePercentage }} full."

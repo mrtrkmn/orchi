@@ -1,0 +1,283 @@
+# ==============================================================================
+# Guacamole Deployment
+# ==============================================================================
+# Apache Guacamole provides browser-based remote desktop (RDP/VNC) access
+# to lab frontend VMs. Replaces the legacy Docker-based guacamole setup
+# in svcs/guacamole/guacamole.go.
+#
+# Legacy mapping:
+#   guacamole.create()          → This Deployment (guacd + web + db)
+#   guacamole.Start()           → Deployment replicas > 0
+#   guacamole.Close()           → Deployment replicas = 0 or delete
+#   guacamole.webPort           → Service port 8080
+#   guacamole.ProxyHandler()    → Ingress + Service routing
+#   guacamole.containers["guacd"] → guacd container
+#   guacamole.containers["db"]    → mysql sidecar (or external DB)
+#   guacamole.containers["web"]   → guacamole-web container
+#
+# Architecture: one Guacamole instance per event, deployed in the
+# orchi-system namespace. Each lab's RDP connections are configured
+# via the Guacamole API by the orchi-operator.
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guacamole
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: guacamole
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: guacamole
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: guacamole
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: guacamole
+        app.kubernetes.io/managed-by: orchi-operator
+        app.kubernetes.io/part-of: orchi
+        orchi.cicibogaz.com/component: guacamole
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        # guacd — Guacamole proxy daemon
+        - name: guacd
+          image: guacamole/guacd:1.5.5
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: guacd
+              containerPort: 4822
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          readinessProbe:
+            tcpSocket:
+              port: guacd
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: guacd
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          volumeMounts:
+            - name: file-transfer
+              mountPath: /home
+        # guacamole-web — Guacamole web application
+        - name: web
+          image: ghcr.io/mrtrkmn/orchi/guacamole:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: GUACD_HOSTNAME
+              value: "localhost"
+            - name: MYSQL_HOSTNAME
+              value: "guacamole-db"
+            - name: MYSQL_DATABASE
+              value: "guacamole_db"
+            - name: MYSQL_USER
+              value: "guacamole_user"
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-db-secret
+                  key: mysql-password
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /guacamole/
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /guacamole/
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+      volumes:
+        - name: file-transfer
+          emptyDir:
+            sizeLimit: 1Gi
+---
+# ==============================================================================
+# Guacamole Database — MySQL/MariaDB
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guacamole-db
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: guacamole-db
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: guacamole
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: guacamole-db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: guacamole-db
+        app.kubernetes.io/managed-by: orchi-operator
+        app.kubernetes.io/part-of: orchi
+        orchi.cicibogaz.com/component: guacamole
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: mysql
+              containerPort: 3306
+              protocol: TCP
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-db-secret
+                  key: mysql-root-password
+            - name: MYSQL_DATABASE
+              value: "guacamole_db"
+            - name: MYSQL_USER
+              value: "guacamole_user"
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-db-secret
+                  key: mysql-password
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            exec:
+              command:
+                - mysqladmin
+                - ping
+                - -h
+                - localhost
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - mysqladmin
+                - ping
+                - -h
+                - localhost
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          volumeMounts:
+            - name: db-data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: db-data
+          persistentVolumeClaim:
+            claimName: guacamole-db-pvc
+---
+# ==============================================================================
+# Guacamole Database PVC
+# ==============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: guacamole-db-pvc
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: guacamole-db
+    app.kubernetes.io/part-of: orchi
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# ==============================================================================
+# Guacamole Services
+# ==============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: guacamole
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: guacamole
+    app.kubernetes.io/part-of: orchi
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: guacamole
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: guacamole-db
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: guacamole-db
+    app.kubernetes.io/part-of: orchi
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: guacamole-db
+  ports:
+    - name: mysql
+      port: 3306
+      targetPort: mysql
+      protocol: TCP
+---
+# ==============================================================================
+# Guacamole Database Secret
+# ==============================================================================
+# WARNING: This is an example only. Do NOT commit real passwords to version
+# control. In production, use one of:
+#   - External Secrets Operator (e.g., AWS Secrets Manager, HashiCorp Vault)
+#   - Sealed Secrets (Bitnami)
+#   - kubectl create secret generic guacamole-db-secret --from-literal=...
+# ==============================================================================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: guacamole-db-secret
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: guacamole-db
+    app.kubernetes.io/part-of: orchi
+type: Opaque
+stringData:
+  mysql-root-password: "REPLACE_BEFORE_DEPLOY"
+  mysql-password: "REPLACE_BEFORE_DEPLOY"

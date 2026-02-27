@@ -1,0 +1,53 @@
+# ==============================================================================
+# Pod Security Admission — Namespace Labels
+# ==============================================================================
+# Kubernetes Pod Security Standards enforce security best practices at the
+# namespace level. These labels configure the Pod Security Admission controller
+# (built into K8s 1.25+) to enforce/audit/warn on restricted profiles.
+#
+# Legacy mapping:
+#   No legacy equivalent (Docker had no security profiles)
+#   docker.ContainerConfig had no security context
+#   Now enforced: non-root, no privilege escalation, read-only rootfs
+#
+# This file documents the labels to add to each namespace type.
+# The operator applies these when creating namespaces.
+# ==============================================================================
+
+# orchi-system namespace — baseline profile
+# The orchi-system namespace runs WireGuard (needs NET_ADMIN), so we use
+# "baseline" enforcement and "restricted" auditing/warnings.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: orchi-system
+  labels:
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: system
+    # Pod Security Admission labels
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: latest
+---
+# Lab namespace template — restricted profile
+# Lab namespaces run challenge containers that must be non-root, read-only rootfs,
+# no privilege escalation. Full "restricted" enforcement.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: orchi-lab-template
+  labels:
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: lab
+    # Pod Security Admission labels — strict enforcement
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: latest

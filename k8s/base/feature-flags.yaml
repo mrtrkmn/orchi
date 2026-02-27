@@ -1,0 +1,73 @@
+# ==============================================================================
+# Feature Flags ConfigMap
+# ==============================================================================
+# Controls the gradual cutover from legacy daemon to Kubernetes operator.
+# The operator reads these flags to decide which code paths to use.
+#
+# Legacy mapping:
+#   daemon.Config.ProductionMode           → FEATURE_K8S_ENABLED
+#   docker.NewContainer() vs K8s pods      → FEATURE_K8S_LABS
+#   ipTab.createRejectRule() vs NetPol     → FEATURE_K8S_NETWORK_POLICIES
+#   wg.NewGRPCVPNClient() vs K8s WG       → FEATURE_K8S_VPN
+#   store.NewGRPClientDBConnection()       → FEATURE_K8S_STORE
+#   dns.New() vs CoreDNS ConfigMap         → FEATURE_K8S_DNS
+#   guacamole.New() vs K8s Guacamole       → FEATURE_K8S_GUACAMOLE
+#
+# Cutover strategy:
+#   1. Start with all flags = "false" (legacy mode)
+#   2. Enable one feature at a time, validate, then move to next
+#   3. Once all flags = "true", legacy code paths are unused
+#   4. Remove legacy code after stabilization period
+#
+# Rollback:
+#   Set any flag back to "false" to revert that subsystem to legacy mode
+# ==============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orchi-feature-flags
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-feature-flags
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: config
+data:
+  # Master switch — enables the K8s operator path
+  # When "false", the daemon operates in legacy mode entirely
+  FEATURE_K8S_ENABLED: "true"
+
+  # Lab creation — use K8s namespaces + Challenge CRDs instead of Docker
+  # Legacy: docker.NewContainer() + docker.Network.Connect()
+  # K8s:    Create Lab CR → operator reconciles namespace + pods
+  FEATURE_K8S_LABS: "true"
+
+  # Network isolation — use NetworkPolicies instead of iptables
+  # Legacy: ipTab.createRejectRule() / ipTab.createAcceptRule()
+  # K8s:    NetworkPolicy resources applied per lab namespace
+  FEATURE_K8S_NETWORK_POLICIES: "true"
+
+  # VPN — use K8s WireGuard Deployment instead of external gRPC service
+  # Legacy: wg.NewGRPCVPNClient() → external WireGuard host
+  # K8s:    WireGuard Deployment in orchi-system
+  FEATURE_K8S_VPN: "true"
+
+  # Store — use K8s StatefulSet store instead of external gRPC store
+  # Legacy: store.NewGRPClientDBConnection() → external host
+  # K8s:    orchi-store.orchi-system.svc:5454
+  FEATURE_K8S_STORE: "true"
+
+  # DNS — use CoreDNS ConfigMaps instead of custom DNS server container
+  # Legacy: dns.New(records) → dns.Server.Run(ctx)
+  # K8s:    Operator creates lab-dns-records ConfigMap
+  FEATURE_K8S_DNS: "true"
+
+  # Guacamole — use K8s Guacamole Deployment instead of daemon-managed
+  # Legacy: guacamole.New() → guacamole.create()
+  # K8s:    Guacamole Deployment in orchi-system
+  FEATURE_K8S_GUACAMOLE: "true"
+
+  # Observability — enable Prometheus metrics endpoint on operator
+  # Legacy: daemon.MonitorHost() gRPC streaming
+  # K8s:    /metrics endpoint scraped by Prometheus
+  FEATURE_METRICS_ENABLED: "true"

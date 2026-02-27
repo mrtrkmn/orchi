@@ -1,4 +1,4 @@
-module github.com/aau-network-security/haaukins
+module github.com/mrtrkmn/orchi
 
 go 1.15
 

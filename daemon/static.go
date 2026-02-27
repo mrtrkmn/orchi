@@ -8,7 +8,7 @@ const (
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>404 Not Found &mdash; Haaukins </title>
+  <title>404 Not Found &mdash; Orchi </title>
   <style>
 			   
 		//@import url('https://fonts.googleapis.com/css?family=Roboto+Mono');
@@ -106,10 +106,10 @@ const (
     <p>
       404 Not Found
     </p>
-    <img src="https://raw.githubusercontent.com/aau-network-security/haaukins/master/.github/logo/white240px.png"  class="center">
+    <img src="https://raw.githubusercontent.com/mrtrkmn/orchi/master/.github/logo/white240px.png"  class="center">
     
     <div class="link-container">
-  <a target="_blank" href="https://github.com/aau-network-security/haaukins" class="more-link">Visit to our Github Repository</a>
+  <a target="_blank" href="https://github.com/mrtrkmn/orchi" class="more-link">Visit to our Github Repository</a>
 </div>
   </div>
 

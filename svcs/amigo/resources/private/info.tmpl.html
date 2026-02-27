@@ -7,7 +7,7 @@
             <h1 class="text-center mt-toppage mb-2"><i class="fa fa-info-circle " aria-hidden="true"></i>  Information Point</h1>
             </div>
            <div class= "col-lg-12 col-md-12" style="text-align: right">
-               <a href="https://github.com/aau-network-security/haaukins/edit/master/svcs/amigo/resources/private/info.tmpl.html"><i class="fas fa-edit " aria-hidden="true"></i> Edit this page</a>
+               <a href="https://github.com/aau-network-security/orchi/edit/master/svcs/amigo/resources/private/info.tmpl.html"><i class="fas fa-edit " aria-hidden="true"></i> Edit this page</a>
            </div>
             <div style="width: 100%">
                 <div role="alert" class="alert alert-primary mt-3" style="text-align: center;">
@@ -36,7 +36,7 @@
                                 {{ if or (eq .IsVPN 1) (eq .IsVPN 2 ) }}
                                 <div class="tab-pane fade show active" id="vpn-conn" role="tabpanel" aria-labelledby="vpn-conn-tab">
 
-                                    In order to have VPN connection into virtualized lab environment on Haaukins,
+                                    In order to have VPN connection into virtualized lab environment on Orchi,
                                     you need to install Wireguard client for your computer. <br><br>
 
                                     <b>Installation guideline for variety of clients are available on official website of Wireguard.</b>
@@ -46,8 +46,8 @@
                                     <li> Installation instructions for all clients: <a href="https://www.wireguard.com/install/">https://www.wireguard.com/install/</a></li>
 
                                     <p class="p-2 mt-2 dark-color mb-0" style="font-weight: bold; color:red;">User Scripts</p>
-                                    <li> Install Wireguard script : <a href="https://raw.githubusercontent.com/Mymaqn/wireguardhaaukins/main/install_wireguard.sh">install_wireguard.sh</a> </li>
-                                    <li> Connect Event script: <a href="https://raw.githubusercontent.com/Mymaqn/wireguardhaaukins/main/connectwireguard.py">connect_event.py</a> </li>
+                                    <li> Install Wireguard script : <a href="https://raw.githubusercontent.com/Mymaqn/wireguardorchi/main/install_wireguard.sh">install_wireguard.sh</a> </li>
+                                    <li> Connect Event script: <a href="https://raw.githubusercontent.com/Mymaqn/wireguardorchi/main/connectwireguard.py">connect_event.py</a> </li>
                                     <li> Connect Event script is making your Wireguard interface up and modifies your <code>/etc/hosts</code> file</li>
                                     <li> If you notice outdated information, help us to update :)</li>
                                     <li> Use the scripts with your responsibility. </li>

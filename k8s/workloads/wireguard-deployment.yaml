@@ -1,0 +1,180 @@
+# ==============================================================================
+# WireGuard VPN Deployment
+# ==============================================================================
+# Replaces the external WireGuard gRPC service (network/vpn/wireguard.go).
+# Runs WireGuard as a K8s Deployment in orchi-system with a LoadBalancer
+# Service for external UDP access.
+#
+# Legacy mapping:
+#   wg.WireGuardConfig           → ConfigMap + Secret
+#   wg.NewGRPCVPNClient()        → Operator manages WG config directly
+#   wg.Creds                     → ServiceAccount token (internal)
+#   daemon.Config.VPNConn        → ConfigMap WIREGUARD_* vars
+#   store.VpnConn                → Team CR status.vpnConfig
+#   store.Team.vpnKeys           → WireGuard peer public keys in Secret
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wireguard
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: wireguard
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: vpn
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: wireguard
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: wireguard
+        app.kubernetes.io/managed-by: orchi-operator
+        app.kubernetes.io/part-of: orchi
+        orchi.cicibogaz.com/component: vpn
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: wireguard
+          image: linuxserver/wireguard:1.0.20210914
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: wireguard
+              containerPort: 51820
+              protocol: UDP
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: "UTC"
+            - name: SERVERURL
+              valueFrom:
+                configMapKeyRef:
+                  name: wireguard-config
+                  key: server-url
+            - name: SERVERPORT
+              value: "51820"
+            - name: ALLOWEDIPS
+              value: "10.0.0.0/8,172.16.0.0/12"
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+                - SYS_MODULE
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          readinessProbe:
+            exec:
+              command:
+                - wg
+                - show
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          livenessProbe:
+            exec:
+              command:
+                - wg
+                - show
+            initialDelaySeconds: 15
+            periodSeconds: 60
+          volumeMounts:
+            - name: wg-config
+              mountPath: /config
+            - name: host-modules
+              mountPath: /lib/modules
+              readOnly: true
+      volumes:
+        - name: wg-config
+          persistentVolumeClaim:
+            claimName: wireguard-config-pvc
+        - name: host-modules
+          hostPath:
+            path: /lib/modules
+            type: Directory
+---
+# ==============================================================================
+# WireGuard Service — LoadBalancer for external UDP
+# ==============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: wireguard
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: wireguard
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: vpn
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: wireguard
+  ports:
+    - name: wireguard
+      port: 51820
+      targetPort: wireguard
+      protocol: UDP
+---
+# ==============================================================================
+# WireGuard ConfigMap
+# ==============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wireguard-config
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: wireguard
+    app.kubernetes.io/part-of: orchi
+data:
+  server-url: "vpn.cicibogaz.com"
+---
+# ==============================================================================
+# WireGuard Secret — server private key
+# ==============================================================================
+# WARNING: This is an example only. Do NOT commit real keys to version control.
+# In production, use one of:
+#   - External Secrets Operator (e.g., AWS Secrets Manager, HashiCorp Vault)
+#   - Sealed Secrets (Bitnami)
+#   - kubectl create secret generic wireguard-secret --from-literal=...
+# ==============================================================================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: wireguard-secret
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: wireguard
+    app.kubernetes.io/part-of: orchi
+type: Opaque
+stringData:
+  server-private-key: "REPLACE_BEFORE_DEPLOY"
+---
+# ==============================================================================
+# WireGuard PVC — persistent config
+# ==============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wireguard-config-pvc
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: wireguard
+    app.kubernetes.io/part-of: orchi
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 256Mi

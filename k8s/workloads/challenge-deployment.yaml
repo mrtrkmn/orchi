@@ -1,0 +1,110 @@
+# ==============================================================================
+# Orchi Challenge Deployment
+# ==============================================================================
+# Migrates a Docker-based challenge container to a Kubernetes Deployment.
+# Each challenge runs as a Deployment with resource limits, probes, and
+# security context. Replaces: docker.NewContainer() + container.Create()
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: challenge-sql-injection
+  namespace: orchi-lab-example
+  labels:
+    app.kubernetes.io/name: challenge-sql-injection
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: challenge
+    orchi.cicibogaz.com/lab-id: "example"
+    orchi.cicibogaz.com/challenge-tag: "sql-injection"
+    orchi.cicibogaz.com/category: "web"
+    orchi.cicibogaz.com/difficulty: "medium"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: challenge-sql-injection
+      orchi.cicibogaz.com/component: challenge
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: challenge-sql-injection
+        app.kubernetes.io/managed-by: orchi-operator
+        app.kubernetes.io/part-of: orchi
+        orchi.cicibogaz.com/component: challenge
+        orchi.cicibogaz.com/lab-id: "example"
+        orchi.cicibogaz.com/challenge-tag: "sql-injection"
+      annotations:
+        # Multus secondary network for lab L2 segment
+        k8s.v1.cni.cncf.io/networks: orchi-lab-example-net
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: challenge
+          image: ghcr.io/mrtrkmn/orchi/challenges/sql-injection:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: CHALLENGE_FLAG
+              valueFrom:
+                secretKeyRef:
+                  name: challenge-sql-injection-secret
+                  key: flag
+            - name: CHALLENGE_DIFFICULTY
+              valueFrom:
+                configMapKeyRef:
+                  name: challenge-sql-injection-config
+                  key: difficulty
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/challenge
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config-volume
+          configMap:
+            name: challenge-sql-injection-config
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi
+      restartPolicy: Always

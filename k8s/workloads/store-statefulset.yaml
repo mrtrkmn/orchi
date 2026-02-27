@@ -1,0 +1,160 @@
+# ==============================================================================
+# Store Service — StatefulSet
+# ==============================================================================
+# The store service replaces the legacy external gRPC database backend
+# (store.NewGRPClientDBConnection). It runs as a StatefulSet with persistent
+# storage for event, team, and challenge state.
+#
+# Legacy mapping:
+#   store.NewGRPClientDBConnection()  → In-cluster Service (no gRPC TLS needed)
+#   daemon.Config.Database            → ConfigMap + Secret env vars
+#   ServiceConfig.Grpc endpoint       → K8s Service DNS: orchi-store.orchi-system.svc
+#   ServiceConfig.CertConfig          → Not needed (in-cluster mTLS via service mesh)
+#   store.TeamStore (gRPC CRUD)       → Store pod serves gRPC on port 5454
+#   File-based persistence (EventsDir)→ PVC mounted at /data
+#   daemon.Config.ConfFiles.LogDir    → stdout/stderr (container-native logging)
+# ==============================================================================
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: orchi-store
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-store
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: store
+spec:
+  serviceName: orchi-store
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: orchi-store
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: orchi-store
+        app.kubernetes.io/managed-by: orchi-operator
+        app.kubernetes.io/part-of: orchi
+        orchi.cicibogaz.com/component: store
+    spec:
+      serviceAccountName: orchi-operator
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: store
+          image: ghcr.io/mrtrkmn/orchi/store:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: grpc
+              containerPort: 5454
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          env:
+            - name: STORE_DATA_DIR
+              value: /data
+            - name: STORE_LISTEN_ADDR
+              value: ":5454"
+            - name: STORE_METRICS_ADDR
+              value: ":9090"
+          envFrom:
+            - secretRef:
+                name: orchi-store-secrets
+                optional: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          readinessProbe:
+            tcpSocket:
+              port: grpc
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: grpc
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi
+      terminationGracePeriodSeconds: 30
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          app.kubernetes.io/name: orchi-store
+          app.kubernetes.io/part-of: orchi
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi
+---
+# ==============================================================================
+# Store Service — Headless Service for StatefulSet
+# ==============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: orchi-store
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-store
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: store
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: orchi-store
+  ports:
+    - name: grpc
+      port: 5454
+      targetPort: grpc
+      protocol: TCP
+    - name: metrics
+      port: 9090
+      targetPort: metrics
+      protocol: TCP
+---
+# ==============================================================================
+# Store Secret — database credentials
+# ==============================================================================
+# WARNING: Example only. Do NOT commit real credentials to version control.
+# ==============================================================================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: orchi-store-secrets
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-store
+    app.kubernetes.io/part-of: orchi
+type: Opaque
+stringData:
+  STORE_AUTH_KEY: "REPLACE_BEFORE_DEPLOY"
+  STORE_SIGN_KEY: "REPLACE_BEFORE_DEPLOY"

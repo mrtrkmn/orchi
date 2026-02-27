@@ -13,12 +13,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aau-network-security/haaukins/store"
-	pb "github.com/aau-network-security/haaukins/store/proto"
-	mockserver "github.com/aau-network-security/haaukins/testing"
+	"github.com/mrtrkmn/orchi/store"
+	pb "github.com/mrtrkmn/orchi/store/proto"
+	mockserver "github.com/mrtrkmn/orchi/testing"
 	"google.golang.org/grpc"
 
-	"github.com/aau-network-security/haaukins/lab"
+	"github.com/mrtrkmn/orchi/lab"
 )
 
 const (

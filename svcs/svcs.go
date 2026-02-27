@@ -7,7 +7,7 @@ package svcs
 import (
 	"net/http"
 
-	"github.com/aau-network-security/haaukins/store"
+	"github.com/mrtrkmn/orchi/store"
 )
 
 type ProxyConnector func(store.Event) http.Handler

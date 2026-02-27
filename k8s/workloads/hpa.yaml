@@ -1,0 +1,97 @@
+# ==============================================================================
+# HorizontalPodAutoscaler — Amigo
+# ==============================================================================
+# Auto-scales the Amigo (flag submission frontend) based on CPU utilization.
+# During large events, many teams submit flags concurrently.
+#
+# Legacy mapping:
+#   No legacy autoscaling (single daemon) → HPA scales Amigo 2–10 replicas
+#   eventPool capacity tracking           → K8s HPA based on real CPU usage
+# ==============================================================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: amigo-hpa
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: amigo
+    app.kubernetes.io/part-of: orchi
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: amigo
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 120
+---
+# ==============================================================================
+# HorizontalPodAutoscaler — Guacamole Web
+# ==============================================================================
+# Auto-scales Guacamole web frontends based on CPU utilization.
+# Each remote desktop session consumes web server resources.
+#
+# Legacy mapping:
+#   guacamole.New() single instance       → HPA scales web 1–5 replicas
+#   guacamole.webPort (random)            → Fixed port, multiple replicas
+# ==============================================================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: guacamole-hpa
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: guacamole
+    app.kubernetes.io/part-of: orchi
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: guacamole
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 120

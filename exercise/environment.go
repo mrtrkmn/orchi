@@ -11,12 +11,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/aau-network-security/haaukins/network/dhcp"
-	"github.com/aau-network-security/haaukins/network/dns"
-	"github.com/aau-network-security/haaukins/store"
-	"github.com/aau-network-security/haaukins/virtual"
-	"github.com/aau-network-security/haaukins/virtual/docker"
-	"github.com/aau-network-security/haaukins/virtual/vbox"
+	"github.com/mrtrkmn/orchi/network/dhcp"
+	"github.com/mrtrkmn/orchi/network/dns"
+	"github.com/mrtrkmn/orchi/store"
+	"github.com/mrtrkmn/orchi/virtual"
+	"github.com/mrtrkmn/orchi/virtual/docker"
+	"github.com/mrtrkmn/orchi/virtual/vbox"
 	"github.com/rs/zerolog/log"
 )
 

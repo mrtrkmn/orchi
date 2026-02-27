@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	pb "github.com/aau-network-security/haaukins/daemon/proto"
-	"github.com/aau-network-security/haaukins/store"
+	pb "github.com/mrtrkmn/orchi/daemon/proto"
+	"github.com/mrtrkmn/orchi/store"
 	"github.com/rs/zerolog/log"
 )
 

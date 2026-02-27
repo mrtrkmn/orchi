@@ -1,0 +1,58 @@
+# ==============================================================================
+# Ingress — External access to orchi services
+# ==============================================================================
+# Routes external HTTP(S) traffic to Amigo (challenge frontend) and
+# Guacamole (remote desktop). Replaces direct port bindings in legacy code.
+#
+# Legacy mapping:
+#   daemon.Config.Host.Http      → Ingress host rules
+#   guacamole.webPort             → Ingress path /guacamole → guacamole:8080
+#   amigo web server              → Ingress path / → amigo:80
+#   daemon.Config.Certs           → TLS via cert-manager annotation
+#   daemon.Config.Port.Secure     → Ingress HTTPS (443)
+#   daemon.Config.Port.InSecure   → Ingress HTTP (80) → redirect to HTTPS
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: orchi-ingress
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: ingress
+  annotations:
+    # TLS certificate via cert-manager
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # Force HTTPS
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # WebSocket support for Guacamole
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - orchi.cicibogaz.com
+      secretName: orchi-tls-cert
+  rules:
+    - host: orchi.cicibogaz.com
+      http:
+        paths:
+          # Amigo — challenge submission frontend
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: amigo
+                port:
+                  name: http
+          # Guacamole — remote desktop gateway
+          - path: /guacamole
+            pathType: Prefix
+            backend:
+              service:
+                name: guacamole
+                port:
+                  name: http

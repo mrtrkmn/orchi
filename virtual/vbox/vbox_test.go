@@ -13,9 +13,9 @@ import (
 	"strings"
 	"testing"
 
-	tst "github.com/aau-network-security/haaukins/testing"
-	"github.com/aau-network-security/haaukins/virtual"
-	"github.com/aau-network-security/haaukins/virtual/vbox"
+	tst "github.com/mrtrkmn/orchi/testing"
+	"github.com/mrtrkmn/orchi/virtual"
+	"github.com/mrtrkmn/orchi/virtual/vbox"
 )
 
 const (
@@ -39,7 +39,7 @@ func TestVmBase(t *testing.T) {
 	ctx := context.Background()
 
 	cs := "d41d8cd98f00b204e9800998ecf8427e"
-	vm := vbox.NewVMWithSum("haaukins.ova", "haaukins", cs)
+	vm := vbox.NewVMWithSum("orchi.ova", "orchi", cs)
 	if err := vm.Create(ctx); err != nil {
 		t.Fatalf("unexpected error when creating vm: %s", err)
 	}
@@ -49,7 +49,7 @@ func TestVmBase(t *testing.T) {
 		t.Fatalf("unexpected error when listing vms: %s", err)
 	}
 
-	name := fmt.Sprintf(`"haaukins{%s}"`, cs)
+	name := fmt.Sprintf(`"orchi{%s}"`, cs)
 	if !strings.Contains(output, name) {
 		t.Fatalf("expected virtual machine to have been added")
 	}
@@ -118,15 +118,15 @@ func TestSetRAMandCPU(t *testing.T) {
 	memorysize := 1024
 	ctx := context.Background()
 	cs := "d41d8cd98f00b204e9800998ecf8427e"
-	vm := vbox.NewVMWithSum("haaukins.ova", "haaukins", cs)
+	vm := vbox.NewVMWithSum("orchi.ova", "orchi", cs)
 	if err := vm.Create(ctx); err != nil {
 		t.Fatalf("Error on creating VM : %s", err)
 	}
-	if err := vm.Snapshot("test_haaukins"); err != nil {
+	if err := vm.Snapshot("test_orchi"); err != nil {
 		t.Fatalf("Error on making snapshot on VM: %s", err)
 	}
 	defer vm.Close()
-	linkedCloneVM, err := vm.LinkedClone(ctx, "test_haaukins", vbox.SetRAM(uint(memorysize)), vbox.SetCPU(uint(2)))
+	linkedCloneVM, err := vm.LinkedClone(ctx, "test_orchi", vbox.SetRAM(uint(memorysize)), vbox.SetCPU(uint(2)))
 	if err != nil {
 		t.Fatalf("Linked clone could not created %s ", err)
 	}

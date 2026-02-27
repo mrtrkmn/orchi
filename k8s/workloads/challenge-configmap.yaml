@@ -1,0 +1,37 @@
+# ==============================================================================
+# Orchi Challenge ConfigMap
+# ==============================================================================
+# Non-sensitive challenge configuration. Replaces Docker environment variables
+# and inline config that was previously passed via docker.ContainerConfig.
+# Maps to store.EnvVarConfig and store.RecordConfig from legacy code.
+# ==============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: challenge-sql-injection-config
+  namespace: orchi-lab-example
+  labels:
+    app.kubernetes.io/name: challenge-sql-injection
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: challenge
+    orchi.cicibogaz.com/lab-id: "example"
+data:
+  # Challenge metadata
+  difficulty: "medium"
+  category: "web"
+  points: "100"
+  # Application config
+  challenge.yaml: |
+    server:
+      port: 8080
+      host: "0.0.0.0"
+    database:
+      type: "sqlite"
+      path: "/tmp/challenge.db"
+    challenge:
+      name: "SQL Injection Lab"
+      description: "Find and exploit the SQL injection vulnerability"
+      hints:
+        - "Try entering special characters in the login form"
+        - "Consider what happens when a query is not parameterized"

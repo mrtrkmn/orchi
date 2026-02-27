@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	pb "github.com/aau-network-security/haaukins/daemon/proto"
+	pb "github.com/mrtrkmn/orchi/daemon/proto"
 	"github.com/spf13/cobra"
 )
 

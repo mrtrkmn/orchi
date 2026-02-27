@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	pb "github.com/aau-network-security/haaukins/daemon/proto"
-	"github.com/aau-network-security/haaukins/store"
+	pb "github.com/mrtrkmn/orchi/daemon/proto"
+	"github.com/mrtrkmn/orchi/store"
 	"github.com/rs/zerolog/log"
 )
 
@@ -101,7 +101,7 @@ func (d *daemon) InviteUser(ctx context.Context, req *pb.InviteUserRequest) (*pb
 }
 
 // ListUsers function lists users which are eligible to access commandline and
-// webclient of Haaukins, who have credeentials will be displayed
+// webclient of Orchi, who have credeentials will be displayed
 func (d *daemon) ListUsers(ctx context.Context, req *pb.Empty) (*pb.ListUsersResponse, error) {
 	var usersResp []*pb.ListUsersResponse_UserInfo
 	requester, err := getUserFromIncomingContext(ctx)

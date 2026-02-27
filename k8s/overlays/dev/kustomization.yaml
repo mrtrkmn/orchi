@@ -1,0 +1,85 @@
+# ==============================================================================
+# Kustomize Overlay — Development
+# ==============================================================================
+# Development environment overlay. Reduces resource requirements and uses
+# non-production settings.
+#
+# Legacy mapping:
+#   daemon.Config.ProductionMode = false  → Dev overlay with relaxed settings
+#   daemon.Config defaults (localhost)    → Dev-specific hostnames and ports
+# ==============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../
+
+patches:
+  # Reduce operator resources for dev
+  - target:
+      kind: Deployment
+      name: orchi-operator
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 50m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 64Mi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: 250m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 256Mi
+
+  # Single replica for Amigo in dev
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: amigo-hpa
+    patch: |
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 2
+
+  # Reduce store PVC size for dev
+  - target:
+      kind: StatefulSet
+      name: orchi-store
+    patch: |
+      - op: replace
+        path: /spec/volumeClaimTemplates/0/spec/resources/requests/storage
+        value: 1Gi
+
+  # Relax lab resource quotas for dev
+  - target:
+      kind: ResourceQuota
+      name: lab-resource-quota
+    patch: |
+      - op: replace
+        path: /spec/hard/pods
+        value: "10"
+      - op: replace
+        path: /spec/hard/requests.cpu
+        value: "2"
+      - op: replace
+        path: /spec/hard/limits.cpu
+        value: "4"
+      - op: replace
+        path: /spec/hard/requests.memory
+        value: 2Gi
+      - op: replace
+        path: /spec/hard/limits.memory
+        value: 4Gi
+
+configMapGenerator:
+  - name: orchi-operator-config
+    behavior: merge
+    literals:
+      - ORCHI_HOST_HTTP=localhost
+      - ORCHI_HOST_GRPC=localhost
+      - ORCHI_PRODUCTION_MODE=false
+      - ORCHI_REGISTRY=localhost:5000/orchi

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	pbc "github.com/aau-network-security/haaukins/store/proto"
+	pbc "github.com/mrtrkmn/orchi/store/proto"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"

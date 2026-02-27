@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aau-network-security/haaukins/exercise"
-	"github.com/aau-network-security/haaukins/store"
-	"github.com/aau-network-security/haaukins/virtual"
+	"github.com/mrtrkmn/orchi/exercise"
+	"github.com/mrtrkmn/orchi/store"
+	"github.com/mrtrkmn/orchi/virtual"
 	"github.com/google/uuid"
 )
 

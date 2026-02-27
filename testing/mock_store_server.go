@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	pbc "github.com/aau-network-security/haaukins/store/proto"
+	pbc "github.com/mrtrkmn/orchi/store/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 )

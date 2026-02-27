@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aau-network-security/haaukins/store"
+	"github.com/mrtrkmn/orchi/store"
 	jwt "github.com/golang-jwt/jwt/v4"
 	"google.golang.org/grpc/metadata"
 )

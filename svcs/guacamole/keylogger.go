@@ -9,9 +9,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/aau-network-security/haaukins/store"
+	"github.com/mrtrkmn/orchi/store"
 
-	"github.com/aau-network-security/haaukins/logging"
+	"github.com/mrtrkmn/orchi/logging"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )

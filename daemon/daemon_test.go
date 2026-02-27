@@ -14,14 +14,14 @@ import (
 
 	"context"
 
-	"github.com/aau-network-security/haaukins/exercise"
-	"github.com/aau-network-security/haaukins/lab"
-	"github.com/aau-network-security/haaukins/svcs/guacamole"
-	"github.com/aau-network-security/haaukins/virtual"
+	"github.com/mrtrkmn/orchi/exercise"
+	"github.com/mrtrkmn/orchi/lab"
+	"github.com/mrtrkmn/orchi/svcs/guacamole"
+	"github.com/mrtrkmn/orchi/virtual"
 
-	"github.com/aau-network-security/haaukins/client/cli"
-	pb "github.com/aau-network-security/haaukins/daemon/proto"
-	"github.com/aau-network-security/haaukins/store"
+	"github.com/mrtrkmn/orchi/client/cli"
+	pb "github.com/mrtrkmn/orchi/daemon/proto"
+	"github.com/mrtrkmn/orchi/store"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"

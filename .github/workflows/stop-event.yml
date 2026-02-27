@@ -1,0 +1,89 @@
+name: Stop Event
+
+on:
+  workflow_dispatch:
+    inputs:
+      event_tag:
+        description: 'Event tag to stop/delete'
+        required: true
+        type: string
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+        default: 'dev'
+      cluster_provider:
+        description: 'Cluster provider'
+        required: true
+        type: choice
+        options:
+          - kubeconfig
+          - aws
+        default: 'kubeconfig'
+
+jobs:
+  stop-event:
+    name: Stop event "${{ github.event.inputs.event_tag }}"
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v4
+
+      # --- Option 1: Direct kubeconfig ---
+      - name: Set up kubeconfig (direct)
+        if: github.event.inputs.cluster_provider == 'kubeconfig'
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      # --- Option 2: AWS EKS ---
+      - name: Configure AWS credentials
+        if: github.event.inputs.cluster_provider == 'aws'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Set up kubeconfig (AWS EKS)
+        if: github.event.inputs.cluster_provider == 'aws'
+        run: |
+          aws eks update-kubeconfig \
+            --name "${{ secrets.EKS_CLUSTER_NAME }}" \
+            --region "${{ secrets.AWS_REGION }}"
+
+      - name: Show current event status
+        run: |
+          echo "=== Current event status ==="
+          kubectl get events.orchi.cicibogaz.com/${{ github.event.inputs.event_tag }} -o wide || {
+            echo "::error::Event '${{ github.event.inputs.event_tag }}' not found"
+            exit 1
+          }
+
+      - name: Delete Event CR
+        run: |
+          kubectl delete events.orchi.cicibogaz.com/${{ github.event.inputs.event_tag }}
+          echo "Event '${{ github.event.inputs.event_tag }}' deleted."
+
+      - name: Verify cleanup
+        run: |
+          echo "Waiting for cleanup..."
+          sleep 10
+          echo ""
+          echo "=== Remaining events ==="
+          kubectl get events.orchi.cicibogaz.com 2>/dev/null || echo "No events"
+          echo ""
+          echo "=== Lab namespaces ==="
+          kubectl get ns -l orchi.cicibogaz.com/component=lab 2>/dev/null || echo "No lab namespaces"
