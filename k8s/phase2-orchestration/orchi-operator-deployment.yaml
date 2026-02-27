@@ -143,6 +143,11 @@ data:
 # Operator Secret — sensitive configuration
 # ==============================================================================
 # Replaces daemon.Config fields that contain credentials.
+# WARNING: This is an example only. Do NOT commit real credentials to version
+# control. In production, use one of:
+#   - External Secrets Operator (e.g., AWS Secrets Manager, HashiCorp Vault)
+#   - Sealed Secrets (Bitnami)
+#   - kubectl create secret generic orchi-operator-secrets --from-literal=...
 # ==============================================================================
 apiVersion: v1
 kind: Secret
@@ -155,9 +160,9 @@ metadata:
 type: Opaque
 stringData:
   # Maps to daemon.Config.SigningKey
-  ORCHI_SIGNING_KEY: "replace-with-actual-signing-key"
+  ORCHI_SIGNING_KEY: "REPLACE_BEFORE_DEPLOY"
   # Maps to daemon.Config.Rechaptcha
-  ORCHI_RECAPTCHA_KEY: "replace-with-actual-recaptcha-key"
+  ORCHI_RECAPTCHA_KEY: "REPLACE_BEFORE_DEPLOY"
   # Maps to daemon.Config.APICreds
   ORCHI_API_USERNAME: "admin"
-  ORCHI_API_PASSWORD: "replace-with-actual-api-password"
+  ORCHI_API_PASSWORD: "REPLACE_BEFORE_DEPLOY"

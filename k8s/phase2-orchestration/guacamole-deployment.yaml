@@ -263,6 +263,12 @@ spec:
 # ==============================================================================
 # Guacamole Database Secret
 # ==============================================================================
+# WARNING: This is an example only. Do NOT commit real passwords to version
+# control. In production, use one of:
+#   - External Secrets Operator (e.g., AWS Secrets Manager, HashiCorp Vault)
+#   - Sealed Secrets (Bitnami)
+#   - kubectl create secret generic guacamole-db-secret --from-literal=...
+# ==============================================================================
 apiVersion: v1
 kind: Secret
 metadata:
@@ -273,5 +279,5 @@ metadata:
     app.kubernetes.io/part-of: orchi
 type: Opaque
 stringData:
-  mysql-root-password: "replace-with-secure-root-password"
-  mysql-password: "replace-with-secure-password"
+  mysql-root-password: "REPLACE_BEFORE_DEPLOY"
+  mysql-password: "REPLACE_BEFORE_DEPLOY"
