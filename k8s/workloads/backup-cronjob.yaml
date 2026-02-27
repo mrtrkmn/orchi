@@ -62,11 +62,15 @@ spec:
                   echo "Uploading to S3..."
                   aws s3 cp "${BACKUP_FILE}" \
                     "s3://${BACKUP_BUCKET}/orchi-store/${TIMESTAMP}.tar.gz"
-                  echo "Cleaning up old backups (keeping 7 days)..."
+                  echo "Cleaning up backups older than 7 days..."
+                  CUTOFF_DATE=$(date -d '7 days ago' +%Y%m%d 2>/dev/null || date -v-7d +%Y%m%d)
                   aws s3 ls "s3://${BACKUP_BUCKET}/orchi-store/" | \
-                    awk '{print $4}' | \
-                    head -n -28 | \
-                    xargs -I {} aws s3 rm "s3://${BACKUP_BUCKET}/orchi-store/{}"
+                    awk '{print $4}' | grep -v '^$' | while read -r fname; do
+                      FDATE=$(echo "$fname" | grep -o '^[0-9]\{8\}')
+                      if [ -n "$FDATE" ] && [ "$FDATE" -lt "$CUTOFF_DATE" ]; then
+                        aws s3 rm "s3://${BACKUP_BUCKET}/orchi-store/$fname"
+                      fi
+                    done
                   echo "Backup completed successfully"
               env:
                 - name: BACKUP_BUCKET
