@@ -1,8 +1,13 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import type { ScoreUpdateMessage } from '../types/api';
 
+const isLocal = typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(window.location.hostname));
+
 const WS_BASE_URL = import.meta.env.VITE_WS_URL ||
-  `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//api.${window.location.hostname}/api/v1`;
+  (isLocal
+    ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v1`
+    : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//api.${window.location.hostname}/api/v1`);
 
 /**
  * Custom hook for WebSocket connection to the live scoreboard.

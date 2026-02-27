@@ -115,6 +115,7 @@ func NewRouter(cfg Config) http.Handler {
 				if r.Method == http.MethodGet {
 					challengeHandler.List(w, r)
 				} else {
+					w.Header().Set("Allow", "GET")
 					w.WriteHeader(http.StatusMethodNotAllowed)
 				}
 			case strings.HasSuffix(path, "/teams"):
@@ -124,18 +125,21 @@ func NewRouter(cfg Config) http.Handler {
 				case http.MethodGet:
 					teamHandler.List(w, r)
 				default:
+					w.Header().Set("Allow", "GET, POST")
 					w.WriteHeader(http.StatusMethodNotAllowed)
 				}
 			case strings.HasSuffix(path, "/scoreboard"):
 				if r.Method == http.MethodGet {
 					scoreboardHandler.Get(w, r)
 				} else {
+					w.Header().Set("Allow", "GET")
 					w.WriteHeader(http.StatusMethodNotAllowed)
 				}
 			default:
 				if r.Method == http.MethodGet {
 					eventHandler.Get(w, r)
 				} else {
+					w.Header().Set("Allow", "GET")
 					w.WriteHeader(http.StatusMethodNotAllowed)
 				}
 			}

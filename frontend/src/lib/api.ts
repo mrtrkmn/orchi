@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ||
-  `${window.location.protocol}//api.${window.location.hostname}/api/v1`;
+  (window.location.hostname === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(window.location.hostname)
+    ? '/api/v1'
+    : `${window.location.protocol}//api.${window.location.hostname}/api/v1`);
 
 /**
  * Axios instance configured for the Orchi API.
