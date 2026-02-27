@@ -6,7 +6,7 @@
 #
 # Legacy mapping:
 #   daemon.Config.ProductionMode = true  → Staging mirrors prod behavior
-#   daemon.Config.Host.Http              → staging.cicibogaz.com
+#   daemon.Config.Host.Http              → staging.cyberorch.com
 # ==============================================================================
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
@@ -22,10 +22,10 @@ patches:
     patch: |
       - op: replace
         path: /spec/rules/0/host
-        value: staging.cicibogaz.com
+        value: staging.cyberorch.com
       - op: replace
         path: /spec/tls/0/hosts/0
-        value: staging.cicibogaz.com
+        value: staging.cyberorch.com
 
   # Moderate scaling for staging
   - target:
@@ -43,7 +43,7 @@ configMapGenerator:
   - name: orchi-operator-config
     behavior: merge
     literals:
-      - ORCHI_HOST_HTTP=staging.cicibogaz.com
-      - ORCHI_HOST_GRPC=grpc.staging.cicibogaz.com
+      - ORCHI_HOST_HTTP=staging.cyberorch.com
+      - ORCHI_HOST_GRPC=grpc.staging.cyberorch.com
       - ORCHI_PRODUCTION_MODE=true
       - ORCHI_REGISTRY=ghcr.io/mrtrkmn/orchi/staging

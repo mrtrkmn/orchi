@@ -1,5 +1,4 @@
-<p align="center"> 
-<img src=".github/logo/blue240px.png"  />
+<p align="center">
 <div align="center">
   <a href="https://github.com/mrtrkmn/orchi/releases">
     <img src="https://img.shields.io/github/v/release/mrtrkmn/orchi?style=flat-square" alt="GitHub release">
@@ -100,7 +99,7 @@ kubectl apply -k k8s/overlays/dev
 
 # Create event
 kubectl apply -f - <<EOF
-apiVersion: orchi.cicibogaz.com/v1alpha1
+apiVersion: orchi.cyberorch.com/v1alpha1
 kind: Event
 metadata:
   name: ctf-2024
@@ -116,7 +115,7 @@ spec:
 EOF
 
 # Verify
-kubectl get events.orchi.cicibogaz.com
+kubectl get events.orchi.cyberorch.com
 kubectl -n orchi-system get pods
 ```
 

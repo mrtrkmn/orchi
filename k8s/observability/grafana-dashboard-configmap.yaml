@@ -62,7 +62,7 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
           "targets": [
             {
-              "expr": "count(kube_namespace_labels{label_orchi_cicibogaz_com_component=\"lab\"}) or vector(0)",
+              "expr": "count(kube_namespace_labels{label_orchi_cyberorch_com_component=\"lab\"}) or vector(0)",
               "legendFormat": "namespaces"
             }
           ]

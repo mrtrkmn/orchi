@@ -17,12 +17,12 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: orchi-operator
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: network-policy
-    orchi.cicibogaz.com/lab-id: "example"
+    orchi.cyberorch.com/component: network-policy
+    orchi.cyberorch.com/lab-id: "example"
 spec:
   podSelector:
     matchLabels:
-      orchi.cicibogaz.com/component: challenge
+      orchi.cyberorch.com/component: challenge
   policyTypes:
     - Ingress
     - Egress
@@ -31,13 +31,13 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              orchi.cicibogaz.com/component: challenge
+              orchi.cyberorch.com/component: challenge
   egress:
     # Allow traffic to other challenge pods in the same namespace
     - to:
         - podSelector:
             matchLabels:
-              orchi.cicibogaz.com/component: challenge
+              orchi.cyberorch.com/component: challenge
     # Allow DNS resolution (CoreDNS in kube-system)
     - to:
         - namespaceSelector:

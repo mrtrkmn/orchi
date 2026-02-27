@@ -1,0 +1,81 @@
+# Orchi Decoupled Architecture Ingress
+#
+# Routes traffic to the frontend SPA and API gateway independently.
+# TLS termination with cert-manager for automatic certificate management.
+# Supports WebSocket upgrade for live scoreboard connections.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: orchi-decoupled-ingress
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-ingress
+    app.kubernetes.io/part-of: orchi
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    # Rate limiting middleware
+    traefik.ingress.kubernetes.io/router.middlewares: orchi-system-rate-limit@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - cyberorch.com
+        - api.cyberorch.com
+        - desktop.cyberorch.com
+      secretName: cyberorch-tls-cert
+  rules:
+    # Frontend SPA — routed via ExternalName service in orchi-system
+    - host: cyberorch.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: orchi-frontend-proxy
+                port:
+                  number: 80
+    # API Gateway — REST API and WebSocket endpoints
+    - host: api.cyberorch.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: orchi-api-gateway
+                port:
+                  number: 8080
+    # VNC Proxy — browser-based remote desktop via noVNC + WebSocket
+    # Replaces Guacamole for browser-based VM access.
+    # See docs/architecture/guacamole-replacement.md
+    - host: desktop.cyberorch.com
+      http:
+        paths:
+          - path: /vnc
+            pathType: Prefix
+            backend:
+              service:
+                name: orchi-vnc-proxy
+                port:
+                  number: 8443
+---
+# ExternalName service to route from orchi-system to orchi-frontend namespace.
+# NOTE: Traefik requires allowExternalNameServices=true to route to ExternalName
+# backends. Ensure this is enabled in the Traefik Helm values or static config.
+# Alternatively, deploy the Ingress in the orchi-frontend namespace directly.
+apiVersion: v1
+kind: Service
+metadata:
+  name: orchi-frontend-proxy
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-frontend-proxy
+    app.kubernetes.io/part-of: orchi
+spec:
+  type: ExternalName
+  externalName: orchi-frontend.orchi-frontend.svc.cluster.local
+  ports:
+    - port: 80

@@ -25,7 +25,7 @@ Challenges are defined as Kubernetes Custom Resources (Challenge CRDs). See [`k8
 
 Example challenge:
 ```yaml
-apiVersion: orchi.cicibogaz.com/v1alpha1
+apiVersion: orchi.cyberorch.com/v1alpha1
 kind: Challenge
 metadata:
   name: sql-injection

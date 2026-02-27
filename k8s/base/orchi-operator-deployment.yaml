@@ -24,7 +24,7 @@ metadata:
     app.kubernetes.io/name: orchi-operator
     app.kubernetes.io/managed-by: orchi-operator
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: operator
+    orchi.cyberorch.com/component: operator
 spec:
   replicas: 1
   selector:
@@ -38,7 +38,7 @@ spec:
         app.kubernetes.io/name: orchi-operator
         app.kubernetes.io/managed-by: orchi-operator
         app.kubernetes.io/part-of: orchi
-        orchi.cicibogaz.com/component: operator
+        orchi.cyberorch.com/component: operator
     spec:
       serviceAccountName: orchi-operator
       automountServiceAccountToken: true
@@ -128,8 +128,8 @@ metadata:
     app.kubernetes.io/part-of: orchi
 data:
   # Maps to daemon.Config.Host
-  ORCHI_HOST_HTTP: "orchi.cicibogaz.com"
-  ORCHI_HOST_GRPC: "grpc.orchi.cicibogaz.com"
+  ORCHI_HOST_HTTP: "cyberorch.com"
+  ORCHI_HOST_GRPC: "grpc.cyberorch.com"
   # Maps to daemon.Config.ProductionMode
   ORCHI_PRODUCTION_MODE: "true"
   # Lab cleanup intervals (replaces daemon job schedulers)

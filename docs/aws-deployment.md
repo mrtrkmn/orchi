@@ -23,7 +23,7 @@ This guide walks through deploying the Orchi platform on Amazon EKS and configur
 - An AWS account with permissions to create EKS clusters, IAM roles, and VPCs
 - [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) configured with credentials
 - [eksctl](https://eksctl.io/installation/) for cluster creation
-- [kubectl](https://kubernetes.io/docs/tasks/tools/) 1.25+
+- [kubectl](https://kubernetes.io/docs/tasks/tools/) 1.28+
 - [Helm](https://helm.sh/docs/intro/install/) 3.x (for cluster dependencies)
 - A GitHub repository with Actions enabled
 
@@ -40,7 +40,7 @@ kind: ClusterConfig
 metadata:
   name: orchi-cluster
   region: eu-west-1    # change to your preferred region
-  version: "1.29"
+  version: "1.31"
 
 iam:
   withOIDC: true       # required for GitHub Actions OIDC auth
@@ -78,7 +78,7 @@ This takes 15–20 minutes. It creates the VPC, subnets, security groups, and no
 aws eks create-cluster \
   --name orchi-cluster \
   --region eu-west-1 \
-  --kubernetes-version 1.29 \
+  --kubernetes-version 1.31 \
   --role-arn arn:aws:iam::ACCOUNT_ID:role/eks-cluster-role \
   --resources-vpc-config subnetIds=subnet-xxx,subnet-yyy,securityGroupIds=sg-zzz
 
@@ -113,6 +113,8 @@ If you used `eksctl` with `withOIDC: true`, the EKS OIDC provider is already cre
 
 ```bash
 # Create GitHub OIDC provider in IAM
+# Note: As of 2024, AWS no longer requires the --thumbprint-list parameter
+# for GitHub Actions OIDC. AWS validates the certificate chain automatically.
 aws iam create-open-id-connect-provider \
   --url https://token.actions.githubusercontent.com \
   --client-id-list sts.amazonaws.com \
@@ -189,7 +191,37 @@ aws iam attach-role-policy \
 
 ### 2.3 Grant the IAM Role Access to the Cluster
 
-The IAM role needs to be mapped to a Kubernetes RBAC identity. Add an entry to the `aws-auth` ConfigMap:
+The IAM role needs Kubernetes RBAC permissions. EKS supports two methods:
+
+#### Option A: EKS Access Entries (recommended, EKS 1.30+)
+
+EKS Access Entries are the modern, API-native way to manage cluster access without
+editing the `aws-auth` ConfigMap directly. The cluster version 1.31 used in this
+guide fully supports Access Entries:
+
+```bash
+# Create an access entry for the GitHub Actions role
+aws eks create-access-entry \
+  --cluster-name orchi-cluster \
+  --principal-arn arn:aws:iam::ACCOUNT_ID:role/orchi-github-actions \
+  --type STANDARD \
+  --region eu-west-1
+
+# Associate a policy (ClusterAdmin for deployments)
+aws eks associate-access-policy \
+  --cluster-name orchi-cluster \
+  --principal-arn arn:aws:iam::ACCOUNT_ID:role/orchi-github-actions \
+  --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy \
+  --access-scope type=cluster \
+  --region eu-west-1
+```
+
+> **Note:** For production, consider `AmazonEKSAdminPolicy` (namespace-scoped) instead
+> of `AmazonEKSClusterAdminPolicy` and scope access to the `orchi-system` namespace.
+
+#### Option B: aws-auth ConfigMap (legacy, all EKS versions)
+
+Add an entry to the `aws-auth` ConfigMap:
 
 ```bash
 # Check current auth map
@@ -216,14 +248,14 @@ EKS ships with the Amazon VPC CNI, which does **not** support NetworkPolicy. Ins
 
 ```bash
 # Install Calico for NetworkPolicy support
-kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico-vxlan.yaml
+kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.0/manifests/calico-vxlan.yaml
 ```
 
 Alternatively, use Cilium:
 
 ```bash
 helm repo add cilium https://helm.cilium.io/
-helm install cilium cilium/cilium --version 1.15.0 \
+helm install cilium cilium/cilium --version 1.16.5 \
   --namespace kube-system \
   --set eni.enabled=true \
   --set ipam.mode=eni \
@@ -283,6 +315,60 @@ helm install cert-manager jetstack/cert-manager \
   --set crds.enabled=true
 ```
 
+### 3.5 Configure Cloudflare DNS for Let's Encrypt Wildcard Certificates
+
+Orchi uses a wildcard TLS certificate (`*.cyberorch.com`) issued by Let's Encrypt.
+Wildcard certificates require DNS-01 challenge validation, which is handled by
+cert-manager using the Cloudflare API.
+
+#### 3.5.1 Create a Cloudflare API Token
+
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com/profile/api-tokens)
+2. Click **Create Token**
+3. Use the **Edit zone DNS** template
+4. Configure permissions:
+   - **Zone → DNS → Edit**
+   - **Zone → Zone → Read**
+5. Zone Resources: **Include → Specific zone → cyberorch.com**
+6. Click **Create Token** and copy the token value
+
+#### 3.5.2 Create the Cloudflare Secret in Kubernetes
+
+```bash
+kubectl create secret generic cloudflare-api-token \
+  --namespace cert-manager \
+  --from-literal=api-token=<YOUR_CLOUDFLARE_API_TOKEN>
+```
+
+> **Security:** The token only needs DNS edit permissions for the `cyberorch.com` zone.
+> Do not use a Global API Key. The secret template in `k8s/networking/cert-manager.yaml`
+> is a placeholder — use `kubectl create secret` or External Secrets Operator in production.
+
+#### 3.5.3 Deploy the ClusterIssuer and Certificate
+
+The cert-manager resources are included in the Kustomize base (`k8s/networking/cert-manager.yaml`).
+After deploying Orchi, verify the certificate is issued:
+
+```bash
+# Check ClusterIssuers
+kubectl get clusterissuers
+
+# Check certificate status
+kubectl -n orchi-system get certificates
+kubectl -n orchi-system describe certificate cyberorch-wildcard-cert
+
+# Check the TLS secret was created
+kubectl -n orchi-system get secret cyberorch-tls-cert
+```
+
+If using staging first (recommended for testing):
+
+```bash
+# Temporarily switch to staging issuer to avoid rate limits
+kubectl -n orchi-system patch certificate cyberorch-wildcard-cert \
+  --type merge -p '{"spec":{"issuerRef":{"name":"letsencrypt-staging"}}}'
+```
+
 ## Step 4 — Configure GitHub Repository Secrets
 
 Go to your repository **Settings → Secrets and variables → Actions** and add:
@@ -292,6 +378,7 @@ Go to your repository **Settings → Secrets and variables → Actions** and add
 | `AWS_ROLE_ARN` | `arn:aws:iam::ACCOUNT_ID:role/orchi-github-actions` | IAM role ARN from Step 2 |
 | `AWS_REGION` | `eu-west-1` | AWS region where the cluster runs |
 | `EKS_CLUSTER_NAME` | `orchi-cluster` | EKS cluster name |
+| `CLOUDFLARE_API_TOKEN` | `<token>` | *(Optional)* Cloudflare API token — only needed if using CI/CD to create the K8s secret. Otherwise create manually per Step 3.5 |
 
 For environment-specific secrets, create GitHub Environments (`dev`, `staging`, `prod`) under **Settings → Environments** and add the secrets per environment. This allows different clusters per environment.
 
@@ -360,10 +447,10 @@ kubectl get crds | grep orchi
 kubectl -n orchi-system get pods
 
 # Check events
-kubectl get events.orchi.cicibogaz.com
+kubectl get events.orchi.cyberorch.com
 
 # Check labs
-kubectl get labs.orchi.cicibogaz.com
+kubectl get labs.orchi.cyberorch.com
 
 # Check ingress
 kubectl -n orchi-system get ingress
@@ -388,7 +475,7 @@ kubectl -n orchi-system rollout status deployment/amigo --timeout=120s
 
 # 4. Create an event
 kubectl apply -f - <<EOF
-apiVersion: orchi.cicibogaz.com/v1alpha1
+apiVersion: orchi.cyberorch.com/v1alpha1
 kind: Event
 metadata:
   name: ctf-2024
@@ -404,7 +491,7 @@ spec:
 EOF
 
 # 5. Verify
-kubectl get events.orchi.cicibogaz.com
+kubectl get events.orchi.cyberorch.com
 kubectl -n orchi-system get pods
 ```
 
@@ -452,7 +539,7 @@ aws iam attach-role-policy \
 # Install Velero with AWS plugin
 velero install \
   --provider aws \
-  --plugins velero/velero-plugin-for-aws:v1.9.0 \
+  --plugins velero/velero-plugin-for-aws:v1.11.0 \
   --bucket orchi-backups \
   --backup-location-config region=eu-west-1 \
   --snapshot-location-config region=eu-west-1 \
@@ -474,7 +561,22 @@ velero install \
 | NAT Gateway | Use a single NAT Gateway for dev; multi-AZ for prod |
 | Idle clusters | Scale node group to 0 when not running events |
 
-### Install Cluster Autoscaler
+### Install Cluster Autoscaler or Karpenter
+
+#### Option A: Karpenter (recommended for EKS)
+
+[Karpenter](https://karpenter.sh/) is the AWS-native node autoscaler that provisions
+right-sized nodes faster than Cluster Autoscaler:
+
+```bash
+helm repo add karpenter https://charts.karpenter.sh/
+helm install karpenter karpenter/karpenter \
+  --namespace kube-system \
+  --set settings.clusterName=orchi-cluster \
+  --set settings.clusterEndpoint=$(aws eks describe-cluster --name orchi-cluster --query "cluster.endpoint" --output text)
+```
+
+#### Option B: Cluster Autoscaler
 
 ```bash
 helm repo add autoscaler https://kubernetes.github.io/autoscaler

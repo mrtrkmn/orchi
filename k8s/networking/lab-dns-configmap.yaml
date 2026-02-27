@@ -23,8 +23,8 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: orchi-operator
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: dns
-    orchi.cicibogaz.com/lab-id: "example"
+    orchi.cyberorch.com/component: dns
+    orchi.cyberorch.com/lab-id: "example"
 data:
   # CoreDNS Corefile for this lab's zone
   Corefile: |

@@ -140,7 +140,7 @@ func NewClient() (*Client, error) {
 	host := os.Getenv("HKN_HOST")
 	//todo i have change it for testing purpose
 	if host == "" {
-		host = "grpc.cicibogaz.com"
+		host = "grpc.cyberorch.com"
 	}
 
 	port := os.Getenv("HKN_PORT")

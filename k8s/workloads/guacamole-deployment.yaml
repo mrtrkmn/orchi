@@ -28,7 +28,7 @@ metadata:
     app.kubernetes.io/name: guacamole
     app.kubernetes.io/managed-by: orchi-operator
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: guacamole
+    orchi.cyberorch.com/component: guacamole
 spec:
   replicas: 1
   selector:
@@ -40,7 +40,7 @@ spec:
         app.kubernetes.io/name: guacamole
         app.kubernetes.io/managed-by: orchi-operator
         app.kubernetes.io/part-of: orchi
-        orchi.cicibogaz.com/component: guacamole
+        orchi.cyberorch.com/component: guacamole
     spec:
       automountServiceAccountToken: false
       containers:
@@ -130,7 +130,7 @@ metadata:
     app.kubernetes.io/name: guacamole-db
     app.kubernetes.io/managed-by: orchi-operator
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: guacamole
+    orchi.cyberorch.com/component: guacamole
 spec:
   replicas: 1
   selector:
@@ -144,7 +144,7 @@ spec:
         app.kubernetes.io/name: guacamole-db
         app.kubernetes.io/managed-by: orchi-operator
         app.kubernetes.io/part-of: orchi
-        orchi.cicibogaz.com/component: guacamole
+        orchi.cyberorch.com/component: guacamole
     spec:
       automountServiceAccountToken: false
       containers:

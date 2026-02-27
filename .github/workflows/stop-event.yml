@@ -67,14 +67,14 @@ jobs:
       - name: Show current event status
         run: |
           echo "=== Current event status ==="
-          kubectl get events.orchi.cicibogaz.com/${{ github.event.inputs.event_tag }} -o wide || {
+          kubectl get events.orchi.cyberorch.com/${{ github.event.inputs.event_tag }} -o wide || {
             echo "::error::Event '${{ github.event.inputs.event_tag }}' not found"
             exit 1
           }
 
       - name: Delete Event CR
         run: |
-          kubectl delete events.orchi.cicibogaz.com/${{ github.event.inputs.event_tag }}
+          kubectl delete events.orchi.cyberorch.com/${{ github.event.inputs.event_tag }}
           echo "Event '${{ github.event.inputs.event_tag }}' deleted."
 
       - name: Verify cleanup
@@ -83,7 +83,7 @@ jobs:
           sleep 10
           echo ""
           echo "=== Remaining events ==="
-          kubectl get events.orchi.cicibogaz.com 2>/dev/null || echo "No events"
+          kubectl get events.orchi.cyberorch.com 2>/dev/null || echo "No events"
           echo ""
           echo "=== Lab namespaces ==="
-          kubectl get ns -l orchi.cicibogaz.com/component=lab 2>/dev/null || echo "No lab namespaces"
+          kubectl get ns -l orchi.cyberorch.com/component=lab 2>/dev/null || echo "No lab namespaces"

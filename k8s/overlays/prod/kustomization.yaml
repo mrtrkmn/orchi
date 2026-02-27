@@ -6,7 +6,7 @@
 #
 # Legacy mapping:
 #   daemon.Config.ProductionMode = true  → Production mode
-#   daemon.Config.Host.Http              → orchi.cicibogaz.com
+#   daemon.Config.Host.Http              → cyberorch.com
 #   daemon.Config.Certs.Enabled = true   → TLS via cert-manager
 # ==============================================================================
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -27,10 +27,10 @@ patches:
     patch: |
       - op: replace
         path: /spec/rules/0/host
-        value: orchi.cicibogaz.com
+        value: cyberorch.com
       - op: replace
         path: /spec/tls/0/hosts/0
-        value: orchi.cicibogaz.com
+        value: cyberorch.com
 
   # Full scaling for production
   - target:
@@ -57,7 +57,7 @@ configMapGenerator:
   - name: orchi-operator-config
     behavior: merge
     literals:
-      - ORCHI_HOST_HTTP=orchi.cicibogaz.com
-      - ORCHI_HOST_GRPC=grpc.orchi.cicibogaz.com
+      - ORCHI_HOST_HTTP=cyberorch.com
+      - ORCHI_HOST_GRPC=grpc.cyberorch.com
       - ORCHI_PRODUCTION_MODE=true
       - ORCHI_REGISTRY=ghcr.io/mrtrkmn/orchi

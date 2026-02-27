@@ -22,7 +22,7 @@ metadata:
     app.kubernetes.io/name: wireguard
     app.kubernetes.io/managed-by: orchi-operator
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: vpn
+    orchi.cyberorch.com/component: vpn
 spec:
   replicas: 1
   selector:
@@ -36,7 +36,7 @@ spec:
         app.kubernetes.io/name: wireguard
         app.kubernetes.io/managed-by: orchi-operator
         app.kubernetes.io/part-of: orchi
-        orchi.cicibogaz.com/component: vpn
+        orchi.cyberorch.com/component: vpn
     spec:
       automountServiceAccountToken: false
       containers:
@@ -115,7 +115,7 @@ metadata:
   labels:
     app.kubernetes.io/name: wireguard
     app.kubernetes.io/part-of: orchi
-    orchi.cicibogaz.com/component: vpn
+    orchi.cyberorch.com/component: vpn
 spec:
   type: LoadBalancer
   selector:
@@ -138,7 +138,7 @@ metadata:
     app.kubernetes.io/name: wireguard
     app.kubernetes.io/part-of: orchi
 data:
-  server-url: "vpn.cicibogaz.com"
+  server-url: "vpn.cyberorch.com"
 ---
 # ==============================================================================
 # WireGuard Secret — server private key

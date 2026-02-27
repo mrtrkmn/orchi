@@ -99,14 +99,14 @@ jobs:
           fi
 
           cat > /tmp/event.yaml <<EVENTEOF
-          apiVersion: orchi.cicibogaz.com/v1alpha1
+          apiVersion: orchi.cyberorch.com/v1alpha1
           kind: Event
           metadata:
             name: ${{ github.event.inputs.event_tag }}
             labels:
               app.kubernetes.io/managed-by: github-actions
               app.kubernetes.io/part-of: orchi
-              orchi.cicibogaz.com/created-by: ${{ github.actor }}
+              orchi.cyberorch.com/created-by: ${{ github.actor }}
           spec:
             tag: ${{ github.event.inputs.event_tag }}
             name: "${{ github.event.inputs.event_name }}"
@@ -155,14 +155,14 @@ jobs:
           kubectl apply -f /tmp/event.yaml
           echo ""
           echo "=== Event status ==="
-          kubectl get events.orchi.cicibogaz.com/${{ github.event.inputs.event_tag }} -o wide
+          kubectl get events.orchi.cyberorch.com/${{ github.event.inputs.event_tag }} -o wide
 
       - name: Wait for event to be ready
         run: |
           # Retry up to 30 times with 10s intervals (~5 min total timeout)
           echo "Waiting for event to reach Running phase (timeout: ~5 min)..."
           for i in $(seq 1 30); do
-            PHASE=$(kubectl get events.orchi.cicibogaz.com/${{ github.event.inputs.event_tag }} -o jsonpath='{.status.phase}' 2>/dev/null || echo "Pending")
+            PHASE=$(kubectl get events.orchi.cyberorch.com/${{ github.event.inputs.event_tag }} -o jsonpath='{.status.phase}' 2>/dev/null || echo "Pending")
             echo "  Attempt $i/30: phase=$PHASE"
             if [ "$PHASE" = "Running" ]; then
               echo "Event is running!"
@@ -170,7 +170,7 @@ jobs:
             fi
             if [ "$PHASE" = "Failed" ]; then
               echo "::error::Event failed to start"
-              kubectl get events.orchi.cicibogaz.com/${{ github.event.inputs.event_tag }} -o yaml
+              kubectl get events.orchi.cyberorch.com/${{ github.event.inputs.event_tag }} -o yaml
               exit 1
             fi
             sleep 10
@@ -179,10 +179,10 @@ jobs:
       - name: Print event details
         run: |
           echo "=== Event ==="
-          kubectl get events.orchi.cicibogaz.com/${{ github.event.inputs.event_tag }} -o wide
+          kubectl get events.orchi.cyberorch.com/${{ github.event.inputs.event_tag }} -o wide
           echo ""
           echo "=== Labs ==="
-          kubectl get labs.orchi.cicibogaz.com -l orchi.cicibogaz.com/event=${{ github.event.inputs.event_tag }} 2>/dev/null || echo "No labs yet"
+          kubectl get labs.orchi.cyberorch.com -l orchi.cyberorch.com/event=${{ github.event.inputs.event_tag }} 2>/dev/null || echo "No labs yet"
           echo ""
           echo "=== Teams ==="
-          kubectl get teams.orchi.cicibogaz.com -n orchi-system -l orchi.cicibogaz.com/event=${{ github.event.inputs.event_tag }} 2>/dev/null || echo "No teams yet"
+          kubectl get teams.orchi.cyberorch.com -n orchi-system -l orchi.cyberorch.com/event=${{ github.event.inputs.event_tag }} 2>/dev/null || echo "No teams yet"
