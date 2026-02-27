@@ -1,5 +1,4 @@
-<p align="center"> 
-<img src=".github/logo/blue240px.png"  />
+<p align="center">
 <div align="center">
   <a href="https://github.com/mrtrkmn/orchi/releases">
     <img src="https://img.shields.io/github/v/release/mrtrkmn/orchi?style=flat-square" alt="GitHub release">
