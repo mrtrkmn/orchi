@@ -9,11 +9,11 @@ import (
 	"sync"
 	"time"
 
-	pb "github.com/aau-network-security/haaukins/daemon/proto"
-	"github.com/aau-network-security/haaukins/lab"
-	"github.com/aau-network-security/haaukins/store"
-	"github.com/aau-network-security/haaukins/svcs/guacamole"
-	"github.com/aau-network-security/haaukins/virtual"
+	pb "github.com/mrtrkmn/orchi/daemon/proto"
+	"github.com/mrtrkmn/orchi/lab"
+	"github.com/mrtrkmn/orchi/store"
+	"github.com/mrtrkmn/orchi/svcs/guacamole"
+	"github.com/mrtrkmn/orchi/virtual"
 	"github.com/rs/zerolog/log"
 )
 

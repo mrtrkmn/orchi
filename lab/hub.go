@@ -9,7 +9,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/aau-network-security/haaukins/store"
+	"github.com/mrtrkmn/orchi/store"
 	"github.com/rs/zerolog/log"
 )
 

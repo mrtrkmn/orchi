@@ -25,7 +25,7 @@ builds:
     # Custom ldflags templates.
     # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.ShortCommit}} -X main.date={{.Date}} -X main.builtBy=goreleaser`.
     ldflags:
-      - -s -w -X github.com/aau-network-security/haaukins/client/cli.Version={{ .Version }}
+      - -s -w -X github.com/aau-network-security/orchi/client/cli.Version={{ .Version }}
 
     # Custom environment variables to be set during the builds.
     # Default is empty.
@@ -55,7 +55,7 @@ builds:
     flags:
       - -tags=netgo
     ldflags:
-      - -s -w -X github.com/aau-network-security/haaukins/daemon.Version={{ .Version }}
+      - -s -w -X github.com/aau-network-security/orchi/daemon.Version={{ .Version }}
     goos:
       - linux
     goarch:
@@ -65,7 +65,7 @@ builds:
 archives:
   - # ID of this archive.
     # Defaults to `default`.
-    id: haaukins
+    id: orchi
 
     # Builds reference which build instances should be archived in this archive.
     builds:
@@ -112,7 +112,7 @@ archives:
 
 
   - # ID of this archive.
-    id: haaukins_client
+    id: orchi_client
 
     # Builds reference which build instances should be archived in this archive.
     builds:
@@ -175,13 +175,13 @@ release:
 # brews:
 #   -
 #     ids:
-#       - haaukins_client
+#       - orchi_client
 #     tap:
 #       owner: aau-network-security
-#       name: homebrew-haaukins
+#       name: homebrew-orchi
 #     folder: Formula
-#     homepage: https://github.com/aau-network-security/haaukins/
-#     description: Haaukins CLI
+#     homepage: https://github.com/aau-network-security/orchi/
+#     description: Orchi CLI
 #     install: |
 #       bin.install "hkn"
 #     test: |

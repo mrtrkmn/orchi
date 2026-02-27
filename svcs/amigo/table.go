@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/aau-network-security/haaukins/store"
+	"github.com/mrtrkmn/orchi/store"
 	"github.com/gomarkdown/markdown"
 	"github.com/gomarkdown/markdown/parser"
 	"github.com/microcosm-cc/bluemonday"

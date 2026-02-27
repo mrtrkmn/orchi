@@ -16,27 +16,27 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aau-network-security/haaukins/exercise"
+	"github.com/mrtrkmn/orchi/exercise"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 
-	eproto "github.com/aau-network-security/haaukins/exercise/ex-proto"
-	wg "github.com/aau-network-security/haaukins/network/vpn"
+	eproto "github.com/mrtrkmn/orchi/exercise/ex-proto"
+	wg "github.com/mrtrkmn/orchi/network/vpn"
 
 	"net/http"
 	"path/filepath"
 	"time"
 
-	pbc "github.com/aau-network-security/haaukins/store/proto"
+	pbc "github.com/mrtrkmn/orchi/store/proto"
 
 	"io"
 	"sync"
 
-	"github.com/aau-network-security/haaukins/lab"
-	"github.com/aau-network-security/haaukins/store"
-	"github.com/aau-network-security/haaukins/svcs/amigo"
-	"github.com/aau-network-security/haaukins/virtual/docker"
-	"github.com/aau-network-security/haaukins/virtual/vbox"
+	"github.com/mrtrkmn/orchi/lab"
+	"github.com/mrtrkmn/orchi/store"
+	"github.com/mrtrkmn/orchi/svcs/amigo"
+	"github.com/mrtrkmn/orchi/virtual/docker"
+	"github.com/mrtrkmn/orchi/virtual/vbox"
 	"github.com/rs/zerolog/log"
 )
 
@@ -614,7 +614,7 @@ func (ev *event) Resume(ctx context.Context) error {
 		return err
 	}
 
-	// sets status of the event on haaukins store
+	// sets status of the event on orchi store
 	if err := ev.store.SetStatus(string(ev.store.Tag), int32(Running)); err != nil {
 		return err
 	}
@@ -664,7 +664,7 @@ func (ev *event) removeVPNConfs() {
 	if resp != nil {
 		log.Info().Str("Message", resp.Message).Msgf("VPN connection is closed for event %s ", evTag)
 	}
-	//removeVPNConfigs removes all generated config files when Haaukins is stopped
+	//removeVPNConfigs removes all generated config files when Orchi is stopped
 	if err := removeVPNConfigs(ev.store.WireGuardConfig.Dir + evTag + "*"); err != nil {
 		log.Error().Msgf("Error happened on deleting VPN configuration files for event %s on host  %v", evTag, err)
 	}

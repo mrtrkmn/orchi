@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aau-network-security/haaukins/virtual/vbox"
+	"github.com/mrtrkmn/orchi/virtual/vbox"
 	"math"
 	"math/rand"
 	"net/http"
@@ -15,11 +15,11 @@ import (
 	"sync"
 	"time"
 
-	pb "github.com/aau-network-security/haaukins/daemon/proto"
-	eproto "github.com/aau-network-security/haaukins/exercise/ex-proto"
-	"github.com/aau-network-security/haaukins/store"
-	pbc "github.com/aau-network-security/haaukins/store/proto"
-	"github.com/aau-network-security/haaukins/svcs/guacamole"
+	pb "github.com/mrtrkmn/orchi/daemon/proto"
+	eproto "github.com/mrtrkmn/orchi/exercise/ex-proto"
+	"github.com/mrtrkmn/orchi/store"
+	pbc "github.com/mrtrkmn/orchi/store/proto"
+	"github.com/mrtrkmn/orchi/svcs/guacamole"
 	"github.com/rs/zerolog/log"
 )
 
@@ -33,7 +33,7 @@ const (
 )
 
 var (
-	NoPrivilegeToStressTest = errors.New("No privilege to have stress test on Haaukins !")
+	NoPrivilegeToStressTest = errors.New("No privilege to have stress test on Orchi !")
 	NPUserMaxLabs           = 40
 	NotAvailableTag         = "not available tag, there is already an event which is either running, booked or suspended"
 	vpnIPPools              = newIPPoolFromHost()

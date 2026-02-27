@@ -5,7 +5,7 @@
 package store
 
 import (
-	tst "github.com/aau-network-security/haaukins/testing"
+	tst "github.com/mrtrkmn/orchi/testing"
 	"reflect"
 	"testing"
 )

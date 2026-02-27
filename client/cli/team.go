@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	pb "github.com/aau-network-security/haaukins/daemon/proto"
+	pb "github.com/mrtrkmn/orchi/daemon/proto"
 	"github.com/logrusorgru/aurora"
 	"github.com/spf13/cobra"
 )

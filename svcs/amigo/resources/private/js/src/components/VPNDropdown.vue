@@ -1,6 +1,6 @@
 <template>
   <div class="dropdown">
-    <button class="btn btn-haaukins dropdown-toggle dropdown-css" type="button" id="dropdownMenuButton" data-toggle="dropdown"  v-on:click="createDropDown()" >
+    <button class="btn btn-orchi dropdown-toggle dropdown-css" type="button" id="dropdownMenuButton" data-toggle="dropdown"  v-on:click="createDropDown()" >
       VPN
     </button>
     <div class="dropdown-menu custom-css"  aria-labelledby="dropdownMenuButton">

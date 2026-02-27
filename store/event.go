@@ -12,10 +12,10 @@ import (
 	"path/filepath"
 	"time"
 
-	wg "github.com/aau-network-security/haaukins/network/vpn"
+	wg "github.com/mrtrkmn/orchi/network/vpn"
 	jwt "github.com/golang-jwt/jwt/v4"
 
-	pbc "github.com/aau-network-security/haaukins/store/proto"
+	pbc "github.com/mrtrkmn/orchi/store/proto"
 	"github.com/rs/zerolog/log"
 )
 

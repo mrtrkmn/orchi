@@ -1,4 +1,4 @@
 ---
-- name: Stop Haaukins
+- name: Stop Orchi
   command: sudo systemctl stop hknd
 

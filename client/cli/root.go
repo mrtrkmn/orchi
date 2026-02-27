@@ -21,7 +21,7 @@ import (
 
 	"log"
 
-	pb "github.com/aau-network-security/haaukins/daemon/proto"
+	pb "github.com/mrtrkmn/orchi/daemon/proto"
 	color "github.com/logrusorgru/aurora"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
@@ -42,7 +42,7 @@ var (
 	LocalCertificates    = map[string]string{
 		"CERT":         "https://gist.githubusercontent.com/mrturkmen06/c53edc50ca777bcece6fca8c21d62ce1/raw/f13ca172eb70c84e0abdfc957cdb563a9a072dcc/localhost.crt",
 		"CERT_KEY":     "https://gist.githubusercontent.com/mrturkmen06/2b11591ddda806ce8fa2036693ee347b/raw/2b17c484b520380935102c5268de9911ef2a16eb/localhost.key",
-		"CERT_CA_FILE": "https://gist.githubusercontent.com/mrturkmen06/5de6d51cd398be1c3d7df691fc0e4c71/raw/fb557eba6e55ab753b7ac73f32c5e02e820ed802/haaukins-store.com.crt",
+		"CERT_CA_FILE": "https://gist.githubusercontent.com/mrturkmen06/5de6d51cd398be1c3d7df691fc0e4c71/raw/fb557eba6e55ab753b7ac73f32c5e02e820ed802/orchi-store.com.crt",
 	}
 )
 
@@ -140,7 +140,7 @@ func NewClient() (*Client, error) {
 	host := os.Getenv("HKN_HOST")
 	//todo i have change it for testing purpose
 	if host == "" {
-		host = "grpc.haaukins.com"
+		host = "grpc.cicibogaz.com"
 	}
 
 	port := os.Getenv("HKN_PORT")

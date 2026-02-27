@@ -16,11 +16,11 @@ import (
 	"time"
 	"unicode"
 
-	wg "github.com/aau-network-security/haaukins/network/vpn"
+	wg "github.com/mrtrkmn/orchi/network/vpn"
 
 	logger "github.com/rs/zerolog/log"
 
-	"github.com/aau-network-security/haaukins/store"
+	"github.com/mrtrkmn/orchi/store"
 	jwt "github.com/golang-jwt/jwt/v4"
 )
 
@@ -682,7 +682,7 @@ func (am *Amigo) handleSignupPOST(hook func(t *store.Team) error) http.HandlerFu
 			displayErr(w, params, errors.New("capacity reached for this event"))
 			return
 		}
-		// make the key empty for running haaukins on dev/local
+		// make the key empty for running orchi on dev/local
 		// making recaptcha place empty on config will disable verify
 		if am.recaptcha.secret != "" {
 			logger.Info().Msgf("Recaptcha is enabled on sign up page ")

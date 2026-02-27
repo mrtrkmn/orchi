@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aau-network-security/haaukins/store"
+	"github.com/mrtrkmn/orchi/store"
 
-	pb "github.com/aau-network-security/haaukins/store/proto"
-	mockserver "github.com/aau-network-security/haaukins/testing"
+	pb "github.com/mrtrkmn/orchi/store/proto"
+	mockserver "github.com/mrtrkmn/orchi/testing"
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
 )

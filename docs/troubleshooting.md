@@ -2,7 +2,7 @@
 
 In this guideline, the way of handling troubles and possible reasons of troubles will be explained with some solutions. 
 
-*The issues that you may face during active usage of Haaukins*
+*The issues that you may face during active usage of Orchi*
 
 - [No space left on device](#no-space-left-on-device)
 - [Failed to create the VirtualBox object!](#vm-import-failed)
@@ -20,10 +20,10 @@ In this guideline, the way of handling troubles and possible reasons of troubles
 ## No space left on device
 
 This error could be caused due to various reasons which includes redundant inodes, bad blocks in your volume or an application which fills your `/` root directory. 
-However, if you are facing this error after active usage of Haaukins platform you may need to configure your docker volumes path, the content of docker volumes should not be written to `/` root path. 
+However, if you are facing this error after active usage of Orchi platform you may need to configure your docker volumes path, the content of docker volumes should not be written to `/` root path. 
 Check [this guide](https://mrturkmen.com/no-space-left-on-device/) for solving `No space left on device ` error and see whether it is caused due to docker or not. 
 
-There is another reason that you may face with this error when you are using Haaukins. In the project, we are using `ioutil.Tempfile` which is under the hood connected to `os.Tempfile` and if you do not specify first parameter for that function,
+There is another reason that you may face with this error when you are using Orchi. In the project, we are using `ioutil.Tempfile` which is under the hood connected to `os.Tempfile` and if you do not specify first parameter for that function,
 it will use the value of `os.TempDir` as first parameter and it will check and return following values. 
 
 Definition of how [os.TempDir](https://golang.org/src/os/file.go?s=11019:11040#L348)` is finding out which directory to use for temporary files. 
@@ -33,11 +33,11 @@ Definition of how [os.TempDir](https://golang.org/src/os/file.go?s=11019:11040#L
 >    or the Windows directory. On Plan 9, it returns /tmp.
 > 	 The directory is neither guaranteed to exist nor have accessible permissions.
 
-If your `$TMPDIR` not set and you are using linux, then Haaukins will use `/tmp` directory for writing any temporary files. 
+If your `$TMPDIR` not set and you are using linux, then Orchi will use `/tmp` directory for writing any temporary files. 
 
 You may need to set it to a place which is generally used for keeping data, e.g `/data/tmp` , rather than `/tmp` under root path. 
 
-If any of them did not work for you [create issue](https://github.com/aau-network-security/haaukins/issues/new?assignees=&labels=&template=bug_report.md&title=)
+If any of them did not work for you [create issue](https://github.com/aau-network-security/orchi/issues/new?assignees=&labels=&template=bug_report.md&title=)
 
 Alternatively,symbolic links could be very useful for using a directory which is not under root
 
@@ -161,17 +161,17 @@ It will add to the permission of `/vms`  write and read permissions.
 
 ## Config file not found
 
-Basically it clarifies config file is missing, when you are running daemon of Haaukins or from source code, either you need to clarify config file by adding `--config` flag at the end of file. 
+Basically it clarifies config file is missing, when you are running daemon of Orchi or from source code, either you need to clarify config file by adding `--config` flag at the end of file. 
 
 Like; 
 
 `go run main.go --config=/<absolute-path-to-config>/config.yml`]
 
-For demonized version of Haaukins, you can provide config path after binary such as ; 
+For demonized version of Orchi, you can provide config path after binary such as ; 
 
 `<path-to-binary>/hknd --config=/<absolute-path-to-config/config.yml>`  
 
-Keep in mind that Haaukins is looking for config.yml file on the same directory with binary, which means that if config.yml file on the same directory with Haaukins binary, 
+Keep in mind that Orchi is looking for config.yml file on the same directory with binary, which means that if config.yml file on the same directory with Orchi binary, 
 there is no need to provide absolute path of configuration file. 
 
 ## Guacamole 500 Error 
@@ -188,7 +188,7 @@ This error might happen for some reasons which are;
 - Be careful about updating and downgrading the kernel version, it may cause serious headaches 
   Make sure that Docker and Vboxmanage have been installed correctly. 
   
-- For Haaukins specific; check resume functionality on teams to make sure that suspended VMs started without error. 
+- For Orchi specific; check resume functionality on teams to make sure that suspended VMs started without error. 
   If there is an error happened restart VM which throws the error. 
 
 
@@ -218,15 +218,15 @@ is required to run.
 
 ## Unable to create database client
 
-Having problems regarding to database client might be happened due to certificates error, or not running healthy haaukins-store,
+Having problems regarding to database client might be happened due to certificates error, or not running healthy orchi-store,
 in these cases there are some things to care of ; 
 
-- Ensure haaukins store is running correctly 
+- Ensure orchi store is running correctly 
   
-  It is always good to be sure about docker status of haaukins store, it can be checked through `docker-compose logs -f` which will feed your stdout with logs, 
+  It is always good to be sure about docker status of orchi store, it can be checked through `docker-compose logs -f` which will feed your stdout with logs, 
   if everything seems ok and no problem, you can close watching logs. If there is an error or something on logs, try to fix it with proper approach. 
   
-- Check version of store and haaukins daemon 
+- Check version of store and orchi daemon 
   
   In some cases, it might be the case where daemon and store do not share same version which means that some functionalities and features might not work. In those cases, 
   client might not be able to create connection with database due to proto file differences. (- contract differences- ) Ensure that versions are matching, like features 
@@ -234,7 +234,7 @@ in these cases there are some things to care of ;
   
 - Check certificates 
     
-  Since haaukins and store are using secure gRPC calls, certificates are required to be in place, however certificates which daemon (-for db client-) and store should share 
+  Since orchi and store are using secure gRPC calls, certificates are required to be in place, however certificates which daemon (-for db client-) and store should share 
   same certificates to have a secure gRPC connection. Make sure that there is no problem regarding to certificates. 
   
 - Check ports
@@ -246,8 +246,8 @@ in these cases there are some things to care of ;
   
 ## Certificate Issue
 
-Certificates are crucial for any component of haaukins which provides secure communication between clients and server, for this reason, it is quite important to 
-setup auto-renew of certificates for all domains where haaukins component is using. For a domain where there is no certificate issued yet, following script can help 
+Certificates are crucial for any component of orchi which provides secure communication between clients and server, for this reason, it is quite important to 
+setup auto-renew of certificates for all domains where orchi component is using. For a domain where there is no certificate issued yet, following script can help 
 to retrieve certificate from Let's Encrypt, before using the script make sure that you are able to add TXT record on domain manager like Cloudflare. 
 
 Keep in mind that, `example.domain.com` should be changed with your domain which you would like to get certificate on. 

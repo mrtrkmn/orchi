@@ -23,8 +23,8 @@ var (
 	LINUX   = OperatingSystems{"linux", ""}
 	DARWIN  = OperatingSystems{"darwin", ""}
 
-	DAEMON = app{"", "hknd", "github.com/aau-network-security/haaukins"}
-	CLIENT = app{"client", "hkn", "github.com/aau-network-security/haaukins/client/cli"}
+	DAEMON = app{"", "hknd", "github.com/mrtrkmn/orchi"}
+	CLIENT = app{"client", "hkn", "github.com/mrtrkmn/orchi/client/cli"}
 )
 
 type OperatingSystems struct {
@@ -53,7 +53,7 @@ func (bc *buildContext) outputFilePath() string {
 }
 
 func (bc *buildContext) packageName() string {
-	return fmt.Sprintf("github.com/aau-network-security/haaukins/%s", bc.App.Subdirectory)
+	return fmt.Sprintf("github.com/mrtrkmn/orchi/%s", bc.App.Subdirectory)
 }
 
 func (bc *buildContext) linkFlags(version string) string {

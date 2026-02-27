@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/aau-network-security/haaukins/daemon"
+	"github.com/mrtrkmn/orchi/daemon"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"

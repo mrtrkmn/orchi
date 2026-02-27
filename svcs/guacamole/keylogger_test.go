@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aau-network-security/haaukins/store"
+	"github.com/mrtrkmn/orchi/store"
 
-	"github.com/aau-network-security/haaukins/svcs/guacamole"
+	"github.com/mrtrkmn/orchi/svcs/guacamole"
 )
 
 func TestKeyLogger(t *testing.T) {

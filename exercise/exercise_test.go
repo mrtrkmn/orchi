@@ -7,7 +7,7 @@ package exercise
 import (
 	"context"
 
-	"github.com/aau-network-security/haaukins/virtual/docker"
+	"github.com/mrtrkmn/orchi/virtual/docker"
 )
 
 //

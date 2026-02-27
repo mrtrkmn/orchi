@@ -5,7 +5,7 @@
 package guacamole_test
 
 import (
-	"github.com/aau-network-security/haaukins/svcs/guacamole"
+	"github.com/mrtrkmn/orchi/svcs/guacamole"
 	"testing"
 )
 

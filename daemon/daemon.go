@@ -20,17 +20,17 @@ import (
 	"sync"
 	"time"
 
-	eproto "github.com/aau-network-security/haaukins/exercise/ex-proto"
-	wg "github.com/aau-network-security/haaukins/network/vpn"
+	eproto "github.com/mrtrkmn/orchi/exercise/ex-proto"
+	wg "github.com/mrtrkmn/orchi/network/vpn"
 
-	"github.com/aau-network-security/haaukins/svcs/guacamole"
+	"github.com/mrtrkmn/orchi/svcs/guacamole"
 
-	pb "github.com/aau-network-security/haaukins/daemon/proto"
-	"github.com/aau-network-security/haaukins/logging"
-	"github.com/aau-network-security/haaukins/store"
-	pbc "github.com/aau-network-security/haaukins/store/proto"
-	"github.com/aau-network-security/haaukins/virtual/docker"
-	"github.com/aau-network-security/haaukins/virtual/vbox"
+	pb "github.com/mrtrkmn/orchi/daemon/proto"
+	"github.com/mrtrkmn/orchi/logging"
+	"github.com/mrtrkmn/orchi/store"
+	pbc "github.com/mrtrkmn/orchi/store/proto"
+	"github.com/mrtrkmn/orchi/virtual/docker"
+	"github.com/mrtrkmn/orchi/virtual/vbox"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
@@ -400,7 +400,7 @@ func (d *daemon) grpcOpts() ([]grpc.ServerOption, error) {
 		certPool := x509.NewCertPool()
 		ca, err := ioutil.ReadFile(d.conf.Certs.CAFile)
 		if err != nil {
-			return nil, fmt.Errorf("HAAUKINS Grpc could not read ca certificate: %s", err)
+			return nil, fmt.Errorf("ORCHI Grpc could not read ca certificate: %s", err)
 		}
 		// CA file for let's encrypt is located under domain conf as `chain.pem`
 		// pass chain.pem location

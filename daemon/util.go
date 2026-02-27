@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/aau-network-security/haaukins/store"
-	"github.com/aau-network-security/haaukins/virtual/docker"
+	"github.com/mrtrkmn/orchi/store"
+	"github.com/mrtrkmn/orchi/virtual/docker"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"

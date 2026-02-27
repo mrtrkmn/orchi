@@ -1,6 +1,6 @@
-# Contributing to Haaukins 
+# Contributing to Orchi 
 
-If you wish to make contribution to Haaukins platform, you are very welcome to do it, any contribution would be beneficial. 
+If you wish to make contribution to Orchi platform, you are very welcome to do it, any contribution would be beneficial. 
 
 ## Pull requests are always welcome
 
@@ -11,8 +11,8 @@ If your pull request is not accepted on the first try, don't be discouraged! If 
 ## Contributing Rules 
 
 
-In order to contribute Haaukins, you can fork the repo and make your changes on your fork in a feature branch. 
-Haaukins developments is based on [Git Feature Branch Workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/feature-branch-workflow)
+In order to contribute Orchi, you can fork the repo and make your changes on your fork in a feature branch. 
+Orchi developments is based on [Git Feature Branch Workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/feature-branch-workflow)
 
 - For bug fixes and feature requests, the name of branch that you will work on should follow the convention [XXXX]-something, XXXX refers to issue number. 
 
@@ -34,7 +34,7 @@ Haaukins developments is based on [Git Feature Branch Workflow](https://www.atla
 
 ## Create Issue... 
 
-- Creating an issue on Haaukins development process should follow given templates, although there is a chance to create a pure issue without templating,  it is required to give priority to templates which are exists on repo.
+- Creating an issue on Orchi development process should follow given templates, although there is a chance to create a pure issue without templating,  it is required to give priority to templates which are exists on repo.
 
 
 #### Feature Request Template
@@ -86,7 +86,7 @@ Haaukins developments is based on [Git Feature Branch Workflow](https://www.atla
         
 ## Check for existing issues
 
-- It would be very practical for contributers to have a look for existing issues, if the issue is already exist on [Issues](https://github.com/aau-network-security/haaukins/issues) tab, then giving +1 to the issue will make the issue's priority higher, so that we can give full focus on it. 
+- It would be very practical for contributers to have a look for existing issues, if the issue is already exist on [Issues](https://github.com/aau-network-security/orchi/issues) tab, then giving +1 to the issue will make the issue's priority higher, so that we can give full focus on it. 
 
 
  

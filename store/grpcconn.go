@@ -9,8 +9,8 @@ import (
 	"io/ioutil"
 	"strings"
 
-	eproto "github.com/aau-network-security/haaukins/exercise/ex-proto"
-	pbc "github.com/aau-network-security/haaukins/store/proto"
+	eproto "github.com/mrtrkmn/orchi/exercise/ex-proto"
+	pbc "github.com/mrtrkmn/orchi/store/proto"
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"

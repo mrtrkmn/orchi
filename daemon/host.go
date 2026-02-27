@@ -6,7 +6,7 @@ import (
 
 	"time"
 
-	pb "github.com/aau-network-security/haaukins/daemon/proto"
+	pb "github.com/mrtrkmn/orchi/daemon/proto"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
 )

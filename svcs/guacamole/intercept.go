@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/aau-network-security/haaukins/store"
+	"github.com/mrtrkmn/orchi/store"
 
-	"github.com/aau-network-security/haaukins/svcs/amigo"
+	"github.com/mrtrkmn/orchi/svcs/amigo"
 	"github.com/rs/zerolog/log"
 )
 

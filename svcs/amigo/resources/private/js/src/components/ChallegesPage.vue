@@ -6,7 +6,7 @@
         <h3>{{category[0].challenge.category}}</h3>
       </div>
       <div class="col-lg-3 col-md-4" v-for="el in category" v-bind:key="el.challenge.tag">
-        <button class="btn challenge-button w-100 text-truncate pt-3 pb-3 mb-2" v-on:click="openModal(el)" v-bind:class="{'btn-disabled': el.isChalDisabled && !el.isUserCompleted, 'btn-haaukins': !el.isUserCompleted,'btn-success': el.isUserCompleted}">
+        <button class="btn challenge-button w-100 text-truncate pt-3 pb-3 mb-2" v-on:click="openModal(el)" v-bind:class="{'btn-disabled': el.isChalDisabled && !el.isUserCompleted, 'btn-orchi': !el.isUserCompleted,'btn-success': el.isUserCompleted}">
           <p class="chal-name-font">{{ el.challenge.name }}</p>
           <span>{{ el.challenge.points }}</span>
         </button>
@@ -100,12 +100,12 @@ export default {
 </script>
 
 <style>
-.btn-haaukins{
+.btn-orchi{
   color: #fff;
   background-color: #211A52;
   border-color: #211A52;
 }
-.btn-haaukins:hover{
+.btn-orchi:hover{
   color: #fff;
   background-color: #1a1441;
   border-color: #1a1441;

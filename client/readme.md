@@ -1,7 +1,7 @@
 # Client 
 The command line interface for interacting with the daemon. 
 Run `hkn -h` (using the binary) or `go run app/client/main.go -h` to print the possible commands.
-The specification of the design of commands in the client can be found in [the wiki](https://github.com/aau-network-security/haaukins/wiki/CLI-specification).
+The specification of the design of commands in the client can be found in [the wiki](https://github.com/aau-network-security/orchi/wiki/CLI-specification).
 
 * [Getting Started](#getting-started)
   * [Flags](#flags)
@@ -89,7 +89,7 @@ Flags:
   -h, --help   help for signup
 
 ```
-When you type `hkn user signup`, Haaukins will ask following field to create a user on server who may have limited or full access depending on situation. 
+When you type `hkn user signup`, Orchi will ask following field to create a user on server who may have limited or full access depending on situation. 
 ```console 
 $ hkn user signup 
 

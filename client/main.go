@@ -5,7 +5,7 @@
 package main
 
 import (
-	"github.com/aau-network-security/haaukins/client/cli"
+	"github.com/mrtrkmn/orchi/client/cli"
 )
 
 func main() {

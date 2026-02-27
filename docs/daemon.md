@@ -1,5 +1,5 @@
 # Daemon
-This is the core service of Haaukins, and handles multi-hosting and tearing down of events.
+This is the core service of Orchi, and handles multi-hosting and tearing down of events.
 Currently only one client exists for interacting with the daemon, which can be found in [client directory](../client).
 
 ## Configuration
@@ -28,7 +28,7 @@ docker-repositories:
 ```
 
 ### Exercise configuration
-The `exercise.yml` contains the definition of the exercise library (view structure in [exercise.go](https://github.com/aau-network-security/haaukins/blob/master/store/exercise.go#L36)). 
+The `exercise.yml` contains the definition of the exercise library (view structure in [exercise.go](https://github.com/aau-network-security/orchi/blob/master/store/exercise.go#L36)). 
 An example of an exercise definition:
 ```yaml
 exercises:
