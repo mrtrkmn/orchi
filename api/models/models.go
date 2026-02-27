@@ -85,7 +85,7 @@ type Team struct {
 	Score           int    `json:"score"`
 	Rank            int    `json:"rank"`
 	MembersCount    int    `json:"members_count"`
-	ChallengesSolve int    `json:"challenges_solved"`
+	ChallengesSolved int    `json:"challenges_solved"`
 	LastSolveAt     string `json:"last_solve_at,omitempty"`
 }
 

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import type { ScoreUpdateMessage } from '../types/api';
 
-const WS_BASE_URL = import.meta.env.VITE_WS_URL || `ws://${window.location.host}/api/v1`;
+const WS_BASE_URL = import.meta.env.VITE_WS_URL ||
+  `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v1`;
 
 /**
  * Custom hook for WebSocket connection to the live scoreboard.

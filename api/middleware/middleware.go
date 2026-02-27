@@ -2,9 +2,12 @@ package middleware
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -131,6 +134,7 @@ func CORS(allowedOrigins []string) func(http.Handler) http.Handler {
 
 // RateLimiter tracks request counts per key within a time window.
 type RateLimiter struct {
+	mu       sync.Mutex
 	requests map[string][]time.Time
 	limit    int
 	window   time.Duration
@@ -147,6 +151,9 @@ func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
 
 // Allow checks whether a request from the given key should be allowed.
 func (rl *RateLimiter) Allow(key string) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
 	now := time.Now()
 	cutoff := now.Add(-rl.window)
 
@@ -210,17 +217,9 @@ func RequestID(next http.Handler) http.Handler {
 }
 
 func generateRequestID() string {
-	return time.Now().Format("20060102150405") + "-" + randomString(8)
-}
-
-func randomString(n int) string {
-	const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letters[time.Now().UnixNano()%int64(len(letters))]
-		time.Sleep(time.Nanosecond)
-	}
-	return string(b)
+	b := make([]byte, 8)
+	rand.Read(b)
+	return time.Now().Format("20060102150405") + "-" + hex.EncodeToString(b)
 }
 
 func writeError(w http.ResponseWriter, status int, code, message string) {

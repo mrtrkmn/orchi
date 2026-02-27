@@ -25,7 +25,7 @@ spec:
         - api.orchi.io
       secretName: orchi-tls-cert
   rules:
-    # Frontend SPA — static assets served by Nginx
+    # Frontend SPA — routed via ExternalName service in orchi-system
     - host: orchi.io
       http:
         paths:
@@ -33,7 +33,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: orchi-frontend
+                name: orchi-frontend-proxy
                 port:
                   number: 80
     # API Gateway — REST API and WebSocket endpoints
@@ -47,3 +47,18 @@ spec:
                 name: orchi-api-gateway
                 port:
                   number: 8080
+---
+# ExternalName service to route from orchi-system to orchi-frontend namespace
+apiVersion: v1
+kind: Service
+metadata:
+  name: orchi-frontend-proxy
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-frontend-proxy
+    app.kubernetes.io/part-of: orchi
+spec:
+  type: ExternalName
+  externalName: orchi-frontend.orchi-frontend.svc.cluster.local
+  ports:
+    - port: 80
