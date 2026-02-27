@@ -104,9 +104,14 @@ spec:
       automountServiceAccountToken: true
       containers:
         - name: vnc-proxy
+          # Use a specific version tag in production. The 'latest' tag is used
+          # here as a placeholder until the first release is built.
           image: ghcr.io/mrtrkmn/orchi-vnc-proxy:latest
           imagePullPolicy: IfNotPresent
           ports:
+            # Port 8443 is HTTP (not HTTPS) — TLS is terminated at the Ingress.
+            # The name '8443' is used by convention but the proxy listens on
+            # plain HTTP internally.
             - name: http
               containerPort: 8443
               protocol: TCP

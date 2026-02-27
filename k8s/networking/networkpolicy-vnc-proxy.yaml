@@ -23,6 +23,10 @@ metadata:
     app.kubernetes.io/part-of: orchi
     orchi.cicibogaz.com/component: network-policy
     orchi.cicibogaz.com/lab-id: "example"
+# Note: podSelector targets pods labeled as 'frontend' — in the Orchi lab model,
+# 'frontend' refers to the VM instances that provide the desktop environment
+# (Kali, Ubuntu, Parrot) with VNC access, not the web frontend.
+# This label is applied by the orchi-operator when creating lab VMs.
 spec:
   podSelector:
     matchLabels:
