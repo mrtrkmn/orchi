@@ -1,0 +1,54 @@
+# ==============================================================================
+# NetworkPolicy — Store Service Access
+# ==============================================================================
+# Restricts access to the orchi-store StatefulSet so only the operator
+# can communicate with it. Prevents direct access from lab pods or other
+# workloads.
+#
+# Legacy mapping:
+#   store.NewGRPClientDBConnection() (gRPC TLS auth)  → NetworkPolicy + in-cluster mTLS
+#   ServiceConfig.CertConfig (cert-based access)      → NetworkPolicy selector-based access
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-store-access
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-store
+    app.kubernetes.io/part-of: orchi
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: orchi-store
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Only allow operator to reach the store
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: orchi-operator
+      ports:
+        - protocol: TCP
+          port: 5454
+    # Allow Prometheus to scrape metrics
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9090
+  egress:
+    # DNS resolution
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

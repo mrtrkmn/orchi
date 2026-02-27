@@ -63,16 +63,16 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: guacamole-web-hpa
+  name: guacamole-hpa
   namespace: orchi-system
   labels:
-    app.kubernetes.io/name: guacamole-web
+    app.kubernetes.io/name: guacamole
     app.kubernetes.io/part-of: orchi
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: guacamole-web
+    name: guacamole
   minReplicas: 1
   maxReplicas: 5
   metrics:

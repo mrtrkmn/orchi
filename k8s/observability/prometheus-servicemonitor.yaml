@@ -75,7 +75,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: guacamole-web
+      app.kubernetes.io/name: guacamole
   endpoints:
     - port: http
       path: /metrics
@@ -102,7 +102,9 @@ spec:
     matchLabels:
       app.kubernetes.io/name: wireguard
   endpoints:
-    - port: metrics
+    # WireGuard does not expose a native metrics port.
+    # Use a prometheus-wireguard-exporter sidecar to expose metrics.
+    - port: wireguard
       path: /metrics
       interval: 60s
       scrapeTimeout: 10s

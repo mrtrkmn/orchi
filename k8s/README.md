@@ -59,6 +59,9 @@ Kubernetes manifests for migrating the orchi platform from Docker + legacy daemo
 
 ```
 k8s/
+├── kustomization.yaml          # Kustomize base configuration
+├── README.md                   # This file
+│
 ├── crds/                       # Custom Resource Definitions
 │   ├── challenge-crd.yaml      # Challenge CRD (replaces store.Exercise)
 │   ├── event-crd.yaml          # Event CRD (replaces store.EventConfig)
@@ -70,7 +73,10 @@ k8s/
 │   ├── orchi-operator-rbac.yaml        # ServiceAccount, ClusterRole, ClusterRoleBinding
 │   ├── orchi-operator-deployment.yaml  # Operator Deployment + ConfigMap + Secret
 │   ├── resource-quotas.yaml    # ResourceQuota + LimitRange per lab namespace
-│   └── poddisruptionbudget.yaml # PDBs for critical services
+│   ├── poddisruptionbudget.yaml        # PDBs for critical services
+│   ├── pod-security.yaml       # Pod Security Admission namespace labels
+│   ├── feature-flags.yaml      # Feature flags for gradual cutover
+│   └── external-secrets.yaml   # ExternalSecret CRs (production secret management)
 │
 ├── workloads/                  # Application deployments and services
 │   ├── challenge-deployment.yaml   # Challenge pod template
@@ -81,7 +87,10 @@ k8s/
 │   ├── guacamole-deployment.yaml   # Guacamole remote desktop stack
 │   ├── wireguard-deployment.yaml   # WireGuard VPN gateway
 │   ├── store-statefulset.yaml      # Store database (StatefulSet + PVC)
-│   └── hpa.yaml                    # HorizontalPodAutoscalers (Amigo, Guacamole)
+│   ├── hpa.yaml                    # HorizontalPodAutoscalers (Amigo, Guacamole)
+│   ├── backup-cronjob.yaml         # Store backup CronJob (S3 upload)
+│   ├── velero-schedule.yaml        # Velero cluster backup schedules
+│   └── migration-job.yaml          # One-time data migration Job
 │
 ├── networking/                 # Network policies, ingress, DNS
 │   ├── networkpolicy-default-deny.yaml     # Block all (baseline)
@@ -89,6 +98,7 @@ k8s/
 │   ├── networkpolicy-vpn-ingress.yaml      # WireGuard → lab challenges
 │   ├── networkpolicy-guacamole-access.yaml # guacd → frontend RDP
 │   ├── networkpolicy-operator-access.yaml  # Operator → all lab pods
+│   ├── networkpolicy-store-access.yaml     # Operator → store (restrict access)
 │   ├── ingress.yaml                        # HTTPS ingress (Amigo + Guacamole)
 │   └── lab-dns-configmap.yaml              # CoreDNS zone file per lab
 │
@@ -97,7 +107,10 @@ k8s/
 │   ├── prometheus-rules.yaml               # Alerting rules (health, capacity, resources)
 │   └── grafana-dashboard-configmap.yaml    # Grafana dashboard (auto-provisioned)
 │
-└── README.md                   # This file
+└── overlays/                   # Kustomize environment overlays
+    ├── dev/kustomization.yaml      # Dev — reduced resources, local registry
+    ├── staging/kustomization.yaml  # Staging — staging endpoints, moderate scale
+    └── prod/kustomization.yaml     # Prod — full capacity, backups, external secrets
 ```
 
 ## Legacy-to-Kubernetes Mapping
@@ -183,6 +196,46 @@ k8s/
 | `SetFrontendMemory()` / `SetFrontendCpu()` | Update Challenge CR `.spec.resources` |
 | No HA / single daemon | PDB minAvailable: 1 |
 
+### Security (Manual → Pod Security + External Secrets)
+
+| Legacy (Go code) | Kubernetes Resource |
+|---|---|
+| `daemon.Config.SigningKey` in config.yml | ExternalSecret → AWS/Vault/GCP secret store |
+| `daemon.Config.APICreds` in config.yml | ExternalSecret → rotated credentials |
+| Hardcoded Secret YAML with `REPLACE_BEFORE_DEPLOY` | ExternalSecret CRs pull from vault |
+| `ServiceConfig.CertConfig` TLS certs | cert-manager + in-cluster mTLS |
+| No pod security enforcement | Pod Security Admission (restricted/baseline) |
+| gRPC TLS auth for store access | NetworkPolicy restricts store access to operator |
+
+### Backup & Disaster Recovery
+
+| Legacy (Go code) | Kubernetes Resource |
+|---|---|
+| No automated backup | CronJob `store-backup` (every 6h → S3) |
+| `daemon.Config.ConfFiles.EventsDir` on disk | Velero full backup (daily, 7-day retention) |
+| Manual filesystem backup | Velero CRD-only backup (every 4h, 3-day retention) |
+| No disaster recovery plan | Velero restore from S3 + PVC snapshots |
+
+### CI/CD & Deployment (Ansible → Kustomize)
+
+| Legacy (Go code) | Kubernetes Resource |
+|---|---|
+| `scripts/ansible/main.yml` playbook | Kustomize overlays (dev/staging/prod) |
+| `scripts/deploy/deploy.sh` SSH deploy | `kubectl apply -k k8s/overlays/prod` |
+| `daemon.NewConfigFromFile(path)` | ConfigMap per environment via Kustomize |
+| `.goreleaser.yml` binary builds | Container image builds (CI pipeline) |
+| Single `config.yml` for all settings | Kustomize base + overlay patches |
+
+### Cutover (Legacy → Kubernetes)
+
+| Legacy (Go code) | Kubernetes Resource |
+|---|---|
+| Feature-flagged code paths | `orchi-feature-flags` ConfigMap |
+| `daemon.New(config)` initialization | Operator startup (same binary, K8s path) |
+| `store.NewGRPClientDBConnection()` | Migration Job converts data to CRs |
+| In-memory `eventPool` state | Event CRs in etcd (persistent) |
+| `store.Team` gRPC CRUD | Team CRs via K8s API |
+
 ## CRD Relationship Model
 
 ```
@@ -241,19 +294,38 @@ Event CR (cluster-scoped)
 
 ## Deployment Order
 
-### Step 1 — Install CRDs
+### Using Kustomize (recommended)
+
+```bash
+# Development
+kubectl apply -k k8s/overlays/dev
+
+# Staging
+kubectl apply -k k8s/overlays/staging
+
+# Production (includes backups, external secrets)
+kubectl apply -k k8s/overlays/prod
+```
+
+### Manual step-by-step
+
+#### Step 1 — Install CRDs
 ```bash
 kubectl apply -f k8s/crds/
 ```
 
-### Step 2 — Deploy base resources (RBAC, operator)
+#### Step 2 — Deploy base resources (RBAC, operator, security)
 ```bash
 kubectl apply -f k8s/base/orchi-operator-rbac.yaml
+kubectl apply -f k8s/base/pod-security.yaml
+kubectl apply -f k8s/base/feature-flags.yaml
 kubectl apply -f k8s/base/orchi-operator-deployment.yaml
 kubectl apply -f k8s/base/poddisruptionbudget.yaml
+# Production only:
+kubectl apply -f k8s/base/external-secrets.yaml
 ```
 
-### Step 3 — Deploy workloads
+#### Step 3 — Deploy workloads
 ```bash
 kubectl apply -f k8s/workloads/store-statefulset.yaml
 kubectl apply -f k8s/workloads/amigo-deployment.yaml
@@ -262,18 +334,33 @@ kubectl apply -f k8s/workloads/wireguard-deployment.yaml
 kubectl apply -f k8s/workloads/hpa.yaml
 ```
 
-### Step 4 — Deploy networking
+#### Step 4 — Deploy networking
 ```bash
 kubectl apply -f k8s/networking/ingress.yaml
-# NetworkPolicies and DNS ConfigMaps are applied per-lab by the operator
+kubectl apply -f k8s/networking/networkpolicy-store-access.yaml
+# Lab NetworkPolicies and DNS ConfigMaps are applied per-lab by the operator
 ```
 
-### Step 5 — Deploy observability (requires prometheus-operator)
+#### Step 5 — Deploy observability (requires prometheus-operator)
 ```bash
 kubectl apply -f k8s/observability/
 ```
 
-### Step 6 — Create an event
+#### Step 6 — Migrate data (one-time, during cutover)
+```bash
+# Update migration-config and migration-secrets with legacy store credentials
+kubectl apply -f k8s/workloads/migration-job.yaml
+# Monitor progress:
+kubectl -n orchi-system logs -f job/orchi-data-migration
+```
+
+#### Step 7 — Deploy backup schedules (production)
+```bash
+kubectl apply -f k8s/workloads/backup-cronjob.yaml
+kubectl apply -f k8s/workloads/velero-schedule.yaml
+```
+
+#### Step 8 — Create an event
 ```yaml
 apiVersion: orchi.cicibogaz.com/v1alpha1
 kind: Event
@@ -296,7 +383,7 @@ spec:
         cpu: 2.0
 ```
 
-### Step 7 — Verify
+#### Step 9 — Verify
 ```bash
 # CRDs
 kubectl get crds | grep orchi
@@ -313,6 +400,13 @@ kubectl get teams.orchi.cicibogaz.com -n orchi-system
 # Observability
 kubectl -n orchi-system get servicemonitors
 kubectl -n orchi-system get prometheusrules
+
+# Feature flags
+kubectl -n orchi-system get configmap orchi-feature-flags -o yaml
+
+# Backups
+kubectl -n orchi-system get cronjobs
+kubectl -n velero get schedules
 
 # Lab namespace
 kubectl -n orchi-lab-example get pods,svc,networkpolicies,resourcequotas
@@ -349,6 +443,7 @@ The operator creates these policies in every lab namespace:
 3. **`allow-vpn-ingress`** — (if VPN required) WireGuard pod → challenges
 4. **`allow-guacamole-access`** — guacd → frontend VMs on port 3389
 5. **`allow-operator-access`** — operator → all pods for management
+6. **`allow-store-access`** — operator → store on port 5454 only
 
 ## Observability Stack
 
@@ -361,6 +456,56 @@ The operator creates these policies in every lab namespace:
 | PDB | Prevent voluntary disruptions from taking down critical services |
 | ResourceQuota | Cap total resource usage per lab namespace |
 | LimitRange | Set default and max resource limits per container |
+
+## Security
+
+| Component | Purpose |
+|-----------|---------|
+| Pod Security Admission | Enforce restricted/baseline profiles per namespace |
+| ExternalSecret CRs | Pull secrets from AWS/Vault/GCP instead of hardcoded YAML |
+| NetworkPolicy (store) | Restrict store access to operator only |
+| cert-manager | Automatic TLS certificate provisioning for Ingress |
+| ReadOnlyRootFilesystem | All containers use read-only root filesystem |
+| Non-root execution | All containers run as non-root (UID 65534 or 1000) |
+
+## Backup & Disaster Recovery
+
+| Component | Purpose |
+|-----------|---------|
+| `store-backup` CronJob | Every 6h backup of store PVC to S3 |
+| `orchi-full-backup` Velero | Daily full backup (namespaces + CRDs + PVCs), 7-day retention |
+| `orchi-crd-backup` Velero | Every 4h CRD-only backup (lightweight), 3-day retention |
+
+## Kustomize Overlays
+
+| Overlay | Differences from base |
+|---------|----------------------|
+| `dev` | Reduced resources, single replicas, local registry, 1Gi store PVC |
+| `staging` | Staging endpoints, moderate scaling, production mode enabled |
+| `prod` | Full capacity, external secrets, backups, 20Gi store PVC |
+
+## Feature Flags (Cutover Strategy)
+
+The `orchi-feature-flags` ConfigMap controls the gradual migration:
+
+```
+FEATURE_K8S_ENABLED           = true   # Master switch
+FEATURE_K8S_LABS              = true   # K8s namespaces instead of Docker
+FEATURE_K8S_NETWORK_POLICIES  = true   # NetworkPolicies instead of iptables
+FEATURE_K8S_VPN               = true   # K8s WireGuard instead of gRPC
+FEATURE_K8S_STORE             = true   # K8s store instead of external gRPC
+FEATURE_K8S_DNS               = true   # CoreDNS ConfigMaps instead of dns.Server
+FEATURE_K8S_GUACAMOLE         = true   # K8s Guacamole instead of daemon-managed
+FEATURE_METRICS_ENABLED       = true   # Prometheus metrics
+```
+
+**Cutover process:**
+1. Start with all flags `false` (legacy mode)
+2. Enable one flag at a time, validate, then move to next
+3. Once all flags `true`, legacy code paths are unused
+4. Remove legacy code after stabilization period
+
+**Rollback:** Set any flag back to `false` to revert that subsystem to legacy mode.
 
 ## Rollback Strategy
 
@@ -386,6 +531,11 @@ The operator creates these policies in every lab namespace:
 | WireGuard NET_ADMIN capability risk | Medium | Low | Isolate pod; strict RBAC; dedicated node pool |
 | Too many namespaces (one per team per event) | Low | Medium | Monitor count; consider shared namespaces |
 | Resource limits too tight cause OOMKill | Medium | Medium | Start generous (1Gi); tune from metrics |
-| Store StatefulSet data loss | High | Low | PVC with backup; snapshot schedule |
+| Store StatefulSet data loss | High | Low | PVC with backup; snapshot schedule; Velero |
 | HPA thrashing during load spikes | Low | Medium | Stabilization windows (60s up, 300s down) |
 | CRD schema migration (v1alpha1 → v1beta1) | Medium | High | Conversion webhooks; plan evolution early |
+| External Secrets Operator unavailable | Medium | Low | Fallback to manual K8s Secrets; ESO is optional |
+| Data migration corrupts legacy data | High | Low | Migration Job is read-only on source; verify counts |
+| Feature flag misconfiguration | Medium | Medium | Default all flags to `false`; enable one at a time |
+| Backup CronJob fails silently | Medium | Medium | PrometheusRule alerts on CronJob failures |
+| Kustomize overlay drift | Low | Medium | CI validation of `kustomize build` for each overlay |

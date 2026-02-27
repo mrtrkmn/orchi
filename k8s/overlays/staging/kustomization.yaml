@@ -1,0 +1,49 @@
+# ==============================================================================
+# Kustomize Overlay — Staging
+# ==============================================================================
+# Staging environment overlay. Mirrors production settings but uses
+# staging-specific endpoints and reduced capacity.
+#
+# Legacy mapping:
+#   daemon.Config.ProductionMode = true  → Staging mirrors prod behavior
+#   daemon.Config.Host.Http              → staging.cicibogaz.com
+# ==============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../
+
+patches:
+  # Staging-specific Ingress host
+  - target:
+      kind: Ingress
+      name: orchi-ingress
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: staging.cicibogaz.com
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: staging.cicibogaz.com
+
+  # Moderate scaling for staging
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: amigo-hpa
+    patch: |
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 5
+
+configMapGenerator:
+  - name: orchi-operator-config
+    behavior: merge
+    literals:
+      - ORCHI_HOST_HTTP=staging.cicibogaz.com
+      - ORCHI_HOST_GRPC=grpc.staging.cicibogaz.com
+      - ORCHI_PRODUCTION_MODE=true
+      - ORCHI_REGISTRY=registry.cicibogaz.com/orchi/staging

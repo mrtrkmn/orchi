@@ -1,0 +1,138 @@
+# ==============================================================================
+# Data Migration Job — Legacy Store to Kubernetes CRDs
+# ==============================================================================
+# One-time Kubernetes Job that migrates existing event, team, and exercise
+# data from the legacy gRPC store service into Kubernetes Custom Resources.
+#
+# Legacy mapping:
+#   store.NewGRPClientDBConnection()   → Job reads from legacy store via gRPC
+#   dbc.GetEvents()                    → Creates Event CRs
+#   store.Team data                    → Creates Team CRs
+#   store.Exercise data                → Creates Challenge CRs
+#   daemon.Config.ConfFiles.EventsDir  → Reads event config files
+#   daemon.Config.ConfFiles.UsersFile  → Reads user data
+#
+# The migration job:
+#   1. Connects to the legacy store service (gRPC)
+#   2. Reads all events, teams, exercises
+#   3. Converts each to the corresponding CRD format
+#   4. Creates the CRs via the Kubernetes API
+#   5. Verifies data integrity (count comparison)
+#   6. Reports results to stdout (collected by logging stack)
+#
+# Run this ONCE during cutover. It is idempotent — re-running will skip
+# resources that already exist.
+# ==============================================================================
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: orchi-data-migration
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-data-migration
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: migration
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 3600
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: orchi-data-migration
+        app.kubernetes.io/part-of: orchi
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: orchi-operator
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: migrate
+          image: registry.cicibogaz.com/orchi/migration:latest
+          imagePullPolicy: Always
+          args:
+            - migrate
+            - --source=grpc
+            - --target=kubernetes
+            - --dry-run=false
+            - --verify=true
+          env:
+            # Legacy store connection
+            - name: LEGACY_STORE_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  name: migration-config
+                  key: legacy-store-addr
+            - name: LEGACY_STORE_AUTH_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: migration-secrets
+                  key: legacy-store-auth-key
+            - name: LEGACY_STORE_SIGN_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: migration-secrets
+                  key: legacy-store-sign-key
+            # Kubernetes target (uses in-cluster config via service account)
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
+---
+# ==============================================================================
+# Migration ConfigMap
+# ==============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: migration-config
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-data-migration
+    app.kubernetes.io/part-of: orchi
+data:
+  # Address of the legacy gRPC store service
+  legacy-store-addr: "legacy-store.orchi-legacy.svc:50051"
+---
+# ==============================================================================
+# Migration Secrets
+# ==============================================================================
+# WARNING: Example only. Replace with real credentials before running.
+# ==============================================================================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: migration-secrets
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-data-migration
+    app.kubernetes.io/part-of: orchi
+type: Opaque
+stringData:
+  legacy-store-auth-key: "REPLACE_BEFORE_DEPLOY"
+  legacy-store-sign-key: "REPLACE_BEFORE_DEPLOY"
