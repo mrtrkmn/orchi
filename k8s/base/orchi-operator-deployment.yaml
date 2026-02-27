@@ -51,7 +51,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: operator
-          image: registry.cicibogaz.com/orchi/operator:latest
+          image: ghcr.io/mrtrkmn/orchi/operator:latest
           imagePullPolicy: IfNotPresent
           args:
             - --leader-elect=true
@@ -137,7 +137,7 @@ data:
   ORCHI_EVENT_CHECK_INTERVAL: "8h"
   ORCHI_OVERDUE_CHECK_INTERVAL: "12h"
   # Registry for challenge images
-  ORCHI_REGISTRY: "registry.cicibogaz.com/orchi"
+  ORCHI_REGISTRY: "ghcr.io/mrtrkmn/orchi"
 ---
 # ==============================================================================
 # Operator Secret — sensitive configuration

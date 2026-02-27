@@ -25,7 +25,7 @@ builds:
     # Custom ldflags templates.
     # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.ShortCommit}} -X main.date={{.Date}} -X main.builtBy=goreleaser`.
     ldflags:
-      - -s -w -X github.com/aau-network-security/orchi/client/cli.Version={{ .Version }}
+      - -s -w -X github.com/mrtrkmn/orchi/client/cli.Version={{ .Version }}
 
     # Custom environment variables to be set during the builds.
     # Default is empty.
@@ -55,7 +55,7 @@ builds:
     flags:
       - -tags=netgo
     ldflags:
-      - -s -w -X github.com/aau-network-security/orchi/daemon.Version={{ .Version }}
+      - -s -w -X github.com/mrtrkmn/orchi/daemon.Version={{ .Version }}
     goos:
       - linux
     goarch:
@@ -175,10 +175,10 @@ checksum:
 #     ids:
 #       - orchi_client
 #     tap:
-#       owner: aau-network-security
+#       owner: mrtrkmn
 #       name: homebrew-orchi
 #     folder: Formula
-#     homepage: https://github.com/aau-network-security/orchi/
+#     homepage: https://github.com/mrtrkmn/orchi/
 #     description: Orchi CLI
 #     install: |
 #       bin.install "hkn"

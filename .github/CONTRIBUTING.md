@@ -86,7 +86,7 @@ Orchi developments is based on [Git Feature Branch Workflow](https://www.atlassi
         
 ## Check for existing issues
 
-- It would be very practical for contributers to have a look for existing issues, if the issue is already exist on [Issues](https://github.com/aau-network-security/orchi/issues) tab, then giving +1 to the issue will make the issue's priority higher, so that we can give full focus on it. 
+- It would be very practical for contributers to have a look for existing issues, if the issue is already exist on [Issues](https://github.com/mrtrkmn/orchi/issues) tab, then giving +1 to the issue will make the issue's priority higher, so that we can give full focus on it. 
 
 
  

@@ -60,4 +60,4 @@ configMapGenerator:
       - ORCHI_HOST_HTTP=orchi.cicibogaz.com
       - ORCHI_HOST_GRPC=grpc.orchi.cicibogaz.com
       - ORCHI_PRODUCTION_MODE=true
-      - ORCHI_REGISTRY=registry.cicibogaz.com/orchi
+      - ORCHI_REGISTRY=ghcr.io/mrtrkmn/orchi

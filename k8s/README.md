@@ -378,7 +378,7 @@ spec:
       - xss-basic
       - buffer-overflow
     frontends:
-      - image: registry.cicibogaz.com/orchi/frontends/kali:2024.1
+      - image: ghcr.io/mrtrkmn/orchi/frontends/kali:2024.1
         memoryMB: 4096
         cpu: 2.0
 ```

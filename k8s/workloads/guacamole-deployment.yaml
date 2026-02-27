@@ -74,7 +74,7 @@ spec:
               mountPath: /home
         # guacamole-web — Guacamole web application
         - name: web
-          image: registry.cicibogaz.com/orchi/guacamole:latest
+          image: ghcr.io/mrtrkmn/orchi/guacamole:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

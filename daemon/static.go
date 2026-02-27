@@ -106,7 +106,7 @@ const (
     <p>
       404 Not Found
     </p>
-    <img src="https://raw.githubusercontent.com/aau-network-security/orchi/master/.github/logo/white240px.png"  class="center">
+    <img src="https://raw.githubusercontent.com/mrtrkmn/orchi/master/.github/logo/white240px.png"  class="center">
     
     <div class="link-container">
   <a target="_blank" href="https://github.com/mrtrkmn/orchi" class="more-link">Visit to our Github Repository</a>

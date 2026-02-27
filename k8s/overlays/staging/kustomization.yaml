@@ -46,4 +46,4 @@ configMapGenerator:
       - ORCHI_HOST_HTTP=staging.cicibogaz.com
       - ORCHI_HOST_GRPC=grpc.staging.cicibogaz.com
       - ORCHI_PRODUCTION_MODE=true
-      - ORCHI_REGISTRY=registry.cicibogaz.com/orchi/staging
+      - ORCHI_REGISTRY=ghcr.io/mrtrkmn/orchi/staging
