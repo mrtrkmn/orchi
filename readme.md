@@ -70,6 +70,8 @@ Deployments also trigger automatically on version tags (e.g. `v1.0.0` or `1.0.0`
 > |---|---|
 > | `kubeconfig` | `KUBECONFIG` — base64-encoded kubeconfig |
 > | `aws` (EKS) | `AWS_ROLE_ARN` — IAM role ARN for OIDC, `AWS_REGION` — AWS region, `EKS_CLUSTER_NAME` — EKS cluster name |
+>
+> For a full AWS EKS walkthrough (cluster creation, IAM OIDC, deployment steps), see [`docs/aws-deployment.md`](docs/aws-deployment.md).
 
 ### Create an Event via GitHub Actions
 
@@ -134,6 +136,15 @@ logging/                # Structured logging
 ```
 
 See [`k8s/README.md`](k8s/README.md) for the full Kubernetes manifest documentation, including CRD schemas, deployment order, network policy strategy, and observability setup.
+
+### Documentation
+
+| Document | Description |
+|---|---|
+| [`docs/aws-deployment.md`](docs/aws-deployment.md) | AWS EKS deployment guide (cluster setup, IAM, GitHub Actions) |
+| [`docs/daemon.md`](docs/daemon.md) | Operator configuration and challenge CRD reference |
+| [`docs/troubleshooting.md`](docs/troubleshooting.md) | Common issues and solutions |
+| [`k8s/README.md`](k8s/README.md) | Kubernetes manifest documentation and migration mapping |
 
 ## Development
 
