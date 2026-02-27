@@ -1,0 +1,80 @@
+# ==============================================================================
+# PodDisruptionBudgets — Critical Services
+# ==============================================================================
+# Ensures critical orchi services maintain availability during voluntary
+# disruptions (node drain, cluster upgrades, rolling deployments).
+#
+# Legacy mapping:
+#   daemon single-instance             → PDB ensures operator stays up during drains
+#   guacamole.create() single instance → PDB prevents guacamole eviction during upgrades
+#   No legacy HA                       → PDBs enforce minimum availability (new)
+# ==============================================================================
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: orchi-operator-pdb
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-operator
+    app.kubernetes.io/part-of: orchi
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: orchi-operator
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: amigo-pdb
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: amigo
+    app.kubernetes.io/part-of: orchi
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: amigo
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: guacamole-web-pdb
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: guacamole-web
+    app.kubernetes.io/part-of: orchi
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: guacamole-web
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: wireguard-pdb
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: wireguard
+    app.kubernetes.io/part-of: orchi
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: wireguard
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: orchi-store-pdb
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-store
+    app.kubernetes.io/part-of: orchi
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: orchi-store

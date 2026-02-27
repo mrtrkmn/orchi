@@ -1,0 +1,78 @@
+# ==============================================================================
+# ResourceQuota & LimitRange — Lab Namespaces
+# ==============================================================================
+# Applied by the operator to every lab namespace (orchi-lab-{id}) to prevent
+# a single lab from consuming excessive cluster resources.
+#
+# Legacy mapping:
+#   store.ExerciseInstanceConfig.MemoryMB  → LimitRange default memory limit
+#   store.ExerciseInstanceConfig.CPU       → LimitRange default CPU limit
+#   daemon.Config capacity tracking        → ResourceQuota (enforced by K8s)
+#   In-memory pool size limits             → ResourceQuota pod/service counts
+#   50MB minimum memory validation         → LimitRange min memory (64Mi)
+# ==============================================================================
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: lab-resource-quota
+  # namespace: orchi-lab-{id}  — applied per lab namespace by operator
+  labels:
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: lab
+spec:
+  hard:
+    # Pod limits — prevents runaway challenge creation
+    pods: "20"
+    # CPU limits — total CPU across all pods in the lab
+    requests.cpu: "4"
+    limits.cpu: "8"
+    # Memory limits — total memory across all pods in the lab
+    requests.memory: 4Gi
+    limits.memory: 8Gi
+    # Service limits
+    services: "20"
+    # Storage limits
+    persistentvolumeclaims: "5"
+    requests.storage: 10Gi
+    # ConfigMap and Secret limits
+    configmaps: "30"
+    secrets: "30"
+---
+# ==============================================================================
+# LimitRange — Default Resource Constraints per Container
+# ==============================================================================
+# Sets default resource requests/limits for containers that don't specify them.
+# This ensures every challenge pod has bounded resource usage.
+# ==============================================================================
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: lab-limit-range
+  # namespace: orchi-lab-{id}  — applied per lab namespace by operator
+  labels:
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: lab
+spec:
+  limits:
+    - type: Container
+      # Defaults applied when a pod doesn't specify resources
+      default:
+        cpu: 500m
+        memory: 512Mi
+      defaultRequest:
+        cpu: 100m
+        memory: 128Mi
+      # Absolute minimum — prevents pods with trivially small limits
+      min:
+        cpu: 50m
+        memory: 64Mi
+      # Absolute maximum — no single container can exceed this
+      max:
+        cpu: "2"
+        memory: 4Gi
+    - type: Pod
+      max:
+        cpu: "4"
+        memory: 8Gi

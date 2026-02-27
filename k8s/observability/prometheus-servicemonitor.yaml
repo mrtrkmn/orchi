@@ -1,0 +1,111 @@
+# ==============================================================================
+# Prometheus ServiceMonitors
+# ==============================================================================
+# ServiceMonitor CRDs tell Prometheus which Services to scrape for metrics.
+# Each orchi component exposes a /metrics endpoint that Prometheus scrapes.
+#
+# Legacy mapping:
+#   daemon.MonitorHost() streaming gRPC  → Prometheus node_exporter + custom metrics
+#   In-memory CPU/Memory polling          → kube-state-metrics + cAdvisor (built-in)
+#   No legacy metrics endpoint            → /metrics on each component (new)
+#
+# Prerequisites:
+#   - prometheus-operator (kube-prometheus-stack) installed in the cluster
+#   - ServiceMonitor CRD available
+# ==============================================================================
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: orchi-operator
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: operator
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: orchi-operator
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - orchi-system
+---
+# ==============================================================================
+# Amigo ServiceMonitor
+# ==============================================================================
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: amigo
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: amigo
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: amigo
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: amigo
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - orchi-system
+---
+# ==============================================================================
+# Guacamole ServiceMonitor
+# ==============================================================================
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: guacamole
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: guacamole
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: guacamole
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: guacamole-web
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 60s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - orchi-system
+---
+# ==============================================================================
+# WireGuard ServiceMonitor
+# ==============================================================================
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: wireguard
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: wireguard
+    app.kubernetes.io/part-of: orchi
+    orchi.cicibogaz.com/component: vpn
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: wireguard
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 60s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - orchi-system
