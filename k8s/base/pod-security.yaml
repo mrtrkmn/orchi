@@ -12,6 +12,14 @@
 #
 # This file documents the labels to add to each namespace type.
 # The operator applies these when creating namespaces.
+#
+# Lab namespace template (applied by operator at runtime, not deployed here):
+#   pod-security.kubernetes.io/enforce: restricted
+#   pod-security.kubernetes.io/enforce-version: latest
+#   pod-security.kubernetes.io/audit: restricted
+#   pod-security.kubernetes.io/audit-version: latest
+#   pod-security.kubernetes.io/warn: restricted
+#   pod-security.kubernetes.io/warn-version: latest
 # ==============================================================================
 
 # orchi-system namespace — baseline profile
@@ -27,25 +35,6 @@ metadata:
     orchi.cyberorch.com/component: system
     # Pod Security Admission labels
     pod-security.kubernetes.io/enforce: baseline
-    pod-security.kubernetes.io/enforce-version: latest
-    pod-security.kubernetes.io/audit: restricted
-    pod-security.kubernetes.io/audit-version: latest
-    pod-security.kubernetes.io/warn: restricted
-    pod-security.kubernetes.io/warn-version: latest
----
-# Lab namespace template — restricted profile
-# Lab namespaces run challenge containers that must be non-root, read-only rootfs,
-# no privilege escalation. Full "restricted" enforcement.
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: orchi-lab-template
-  labels:
-    app.kubernetes.io/managed-by: orchi-operator
-    app.kubernetes.io/part-of: orchi
-    orchi.cyberorch.com/component: lab
-    # Pod Security Admission labels — strict enforcement
-    pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/enforce-version: latest
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/audit-version: latest
