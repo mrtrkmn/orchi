@@ -53,7 +53,7 @@ metadata:
     app.kubernetes.io/component: cert-manager
 type: Opaque
 stringData:
-  api-token: "REPLACE_WITH_CLOUDFLARE_API_TOKEN"
+  api-token: "7VTUaXKskr4vci32rX1JeS3IxOrGoVNA0tEl92VX"
 
 ---
 # ------------------------------------------------------------------------------
