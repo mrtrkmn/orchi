@@ -4,16 +4,8 @@
 # ServiceAccount, ClusterRole, and ClusterRoleBinding for the orchi-operator.
 # The operator needs permissions to manage CRDs, namespaces, deployments,
 # services, configmaps, secrets, and custom resources across the cluster.
+# NOTE: The orchi-system Namespace is defined in pod-security.yaml.
 # ==============================================================================
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: orchi-system
-  labels:
-    app.kubernetes.io/managed-by: orchi-operator
-    app.kubernetes.io/part-of: orchi
-    orchi.cyberorch.com/component: system
----
 apiVersion: v1
 kind: ServiceAccount
 metadata:
