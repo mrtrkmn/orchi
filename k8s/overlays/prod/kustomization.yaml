@@ -16,8 +16,8 @@ resources:
   - ../../base
   # Production-only resources
   - ../../base/external-secrets.yaml
-  - ../../workloads/backup-cronjob.yaml
-  - ../../workloads/velero-schedule.yaml
+  - ../../base/workloads/backup-cronjob.yaml
+  - ../../base/workloads/velero-schedule.yaml
 
 patches:
   # Production Ingress host
