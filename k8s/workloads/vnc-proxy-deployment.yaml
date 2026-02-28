@@ -1,0 +1,248 @@
+# ==============================================================================
+# VNC Proxy Deployment
+# ==============================================================================
+# Replaces Apache Guacamole with a lightweight, stateless VNC WebSocket proxy.
+# Connects browser clients (noVNC) to KubeVirt VM VNC endpoints.
+#
+# Architecture:
+#   Browser (noVNC) ──WSS──▶ Ingress ──▶ VNC Proxy ──▶ KubeVirt VNC API ──▶ VM
+#
+# Key differences from Guacamole:
+#   - No database (stateless)
+#   - No user management (uses Orchi JWT)
+#   - No RDP dependency (uses KubeVirt native VNC)
+#   - Single container (vs 3 + MySQL)
+#   - Horizontally scalable (HPA)
+#
+# See docs/architecture/guacamole-replacement.md for full design rationale.
+# ==============================================================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: orchi-vnc-proxy
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-vnc-proxy
+    app.kubernetes.io/part-of: orchi
+    app.kubernetes.io/component: remote-desktop
+---
+# ==============================================================================
+# RBAC: Allow VNC proxy to access KubeVirt VNC subresources
+# ==============================================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: orchi-vnc-proxy
+  labels:
+    app.kubernetes.io/name: orchi-vnc-proxy
+    app.kubernetes.io/part-of: orchi
+rules:
+  # Access VNC subresource on VirtualMachineInstances
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources: ["virtualmachineinstances/vnc"]
+    verbs: ["get"]
+  # List VMIs to validate existence before proxying
+  - apiGroups: ["kubevirt.io"]
+    resources: ["virtualmachineinstances"]
+    verbs: ["get", "list"]
+  # Read namespaces to validate lab ownership
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: orchi-vnc-proxy
+  labels:
+    app.kubernetes.io/name: orchi-vnc-proxy
+    app.kubernetes.io/part-of: orchi
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: orchi-vnc-proxy
+subjects:
+  - kind: ServiceAccount
+    name: orchi-vnc-proxy
+    namespace: orchi-system
+---
+# ==============================================================================
+# VNC Proxy Deployment
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchi-vnc-proxy
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-vnc-proxy
+    app.kubernetes.io/part-of: orchi
+    app.kubernetes.io/component: remote-desktop
+    app.kubernetes.io/managed-by: orchi-operator
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: orchi-vnc-proxy
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: orchi-vnc-proxy
+        app.kubernetes.io/part-of: orchi
+        app.kubernetes.io/component: remote-desktop
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: orchi-vnc-proxy
+      automountServiceAccountToken: true
+      containers:
+        - name: vnc-proxy
+          image: ghcr.io/mrtrkmn/orchi-vnc-proxy:v0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            # Port 8443 is HTTP (not HTTPS) — TLS is terminated at the Ingress.
+            # The name '8443' is used by convention but the proxy listens on
+            # plain HTTP internally.
+            - name: http
+              containerPort: 8443
+              protocol: TCP
+            - name: metrics
+              containerPort: 8081
+              protocol: TCP
+          env:
+            - name: LISTEN_ADDR
+              value: ":8443"
+            - name: METRICS_ADDR
+              value: ":8081"
+            - name: JWT_SIGNING_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: orchi-jwt-keys
+                  key: signing-key
+            - name: LAB_NAMESPACE_PREFIX
+              value: "orchi-lab-"
+            - name: LOG_LEVEL
+              value: "info"
+            - name: MAX_CONNECTIONS_PER_REPLICA
+              value: "50"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+---
+# ==============================================================================
+# VNC Proxy Service
+# ==============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: orchi-vnc-proxy
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-vnc-proxy
+    app.kubernetes.io/part-of: orchi
+    app.kubernetes.io/component: remote-desktop
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: orchi-vnc-proxy
+  ports:
+    - name: http
+      port: 8443
+      targetPort: http
+      protocol: TCP
+    - name: metrics
+      port: 8081
+      targetPort: metrics
+      protocol: TCP
+---
+# ==============================================================================
+# HorizontalPodAutoscaler
+# ==============================================================================
+# Scales based on CPU utilization. In production, consider using custom
+# metrics (vnc_proxy_active_connections) via Prometheus Adapter for more
+# accurate scaling based on actual VNC session count.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: orchi-vnc-proxy
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-vnc-proxy
+    app.kubernetes.io/part-of: orchi
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: orchi-vnc-proxy
+  minReplicas: 2
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 120
+---
+# ==============================================================================
+# PodDisruptionBudget
+# ==============================================================================
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: orchi-vnc-proxy
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-vnc-proxy
+    app.kubernetes.io/part-of: orchi
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: orchi-vnc-proxy

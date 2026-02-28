@@ -1,0 +1,53 @@
+# ==============================================================================
+# Intra-Lab NetworkPolicy
+# ==============================================================================
+# Allows challenge pods within the same lab namespace to communicate freely.
+# This replaces the Docker network Connect() that placed containers on the
+# same bridge/macvlan segment.
+#
+# Replaces:
+#   docker.Network.Connect(container) → intra-namespace pod communication
+#   docker.NewNetwork(isVPN)          → namespace isolation + this policy
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-intra-lab
+  namespace: orchi-lab-example
+  labels:
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cyberorch.com/component: network-policy
+    orchi.cyberorch.com/lab-id: "example"
+spec:
+  podSelector:
+    matchLabels:
+      orchi.cyberorch.com/component: challenge
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from other challenge pods in the same namespace
+    - from:
+        - podSelector:
+            matchLabels:
+              orchi.cyberorch.com/component: challenge
+  egress:
+    # Allow traffic to other challenge pods in the same namespace
+    - to:
+        - podSelector:
+            matchLabels:
+              orchi.cyberorch.com/component: challenge
+    # Allow DNS resolution (CoreDNS in kube-system)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP

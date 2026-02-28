@@ -1,0 +1,147 @@
+# ==============================================================================
+# Cert-Manager — Let's Encrypt with Cloudflare DNS-01
+# ==============================================================================
+# Provides automatic TLS certificate issuance and renewal for cyberorch.com
+# and *.cyberorch.com using Let's Encrypt with Cloudflare DNS-01 challenge.
+#
+# DNS-01 challenge is required for wildcard certificates. Cloudflare is used
+# as the DNS provider since the domain nameservers are managed there.
+#
+# Prerequisites:
+#   1. cert-manager installed in the cluster:
+#      helm install cert-manager jetstack/cert-manager \
+#        --namespace cert-manager --create-namespace --set crds.enabled=true
+#
+#   2. Cloudflare API token created with DNS:Edit permission for cyberorch.com:
+#      Cloudflare Dashboard → Profile → API Tokens → Create Token
+#      Use template "Edit zone DNS" → Zone Resources: Include cyberorch.com
+#
+#   3. Create the Cloudflare API token secret:
+#      kubectl create secret generic cloudflare-api-token \
+#        --namespace cert-manager \
+#        --from-literal=api-token=<YOUR_CLOUDFLARE_API_TOKEN>
+#
+# The wildcard certificate covers:
+#   - cyberorch.com         (main landing page)
+#   - *.cyberorch.com       (event subdomains, api, desktop, staging, etc.)
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Cloudflare API Token Secret (template — replace before deploying)
+# ------------------------------------------------------------------------------
+# WARNING: Do NOT commit real API tokens to version control. In production,
+# WARNING: Do NOT commit real API tokens to version control.
+# This Secret is a TEMPLATE ONLY — it will fail validation if applied as-is.
+# In production, create the secret manually:
+#
+#   kubectl create secret generic cloudflare-api-token \
+#     --namespace cert-manager \
+#     --from-literal=api-token=<YOUR_CLOUDFLARE_API_TOKEN>
+#
+# Or use:
+#   - External Secrets Operator (e.g., AWS Secrets Manager, HashiCorp Vault)
+#   - Sealed Secrets (Bitnami)
+# ------------------------------------------------------------------------------
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-api-token
+  namespace: cert-manager
+  labels:
+    app.kubernetes.io/name: cloudflare-api-token
+    app.kubernetes.io/part-of: orchi
+    app.kubernetes.io/component: cert-manager
+type: Opaque
+stringData:
+  api-token: "REPLACE_WITH_CLOUDFLARE_API_TOKEN"
+
+---
+# ------------------------------------------------------------------------------
+# ClusterIssuer — Let's Encrypt Production with Cloudflare DNS-01
+# ------------------------------------------------------------------------------
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  labels:
+    app.kubernetes.io/name: letsencrypt-prod
+    app.kubernetes.io/part-of: orchi
+    app.kubernetes.io/component: cert-manager
+spec:
+  acme:
+    # Let's Encrypt production ACME server
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@cyberorch.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      # DNS-01 challenge via Cloudflare — required for wildcard certificates
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+
+---
+# ------------------------------------------------------------------------------
+# ClusterIssuer — Let's Encrypt Staging (for testing)
+# ------------------------------------------------------------------------------
+# Use this issuer for testing to avoid Let's Encrypt rate limits.
+# Certificates issued by the staging server are NOT trusted by browsers.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+  labels:
+    app.kubernetes.io/name: letsencrypt-staging
+    app.kubernetes.io/part-of: orchi
+    app.kubernetes.io/component: cert-manager
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: admin@cyberorch.com
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+
+---
+# ------------------------------------------------------------------------------
+# Certificate — Wildcard TLS for cyberorch.com
+# ------------------------------------------------------------------------------
+# Issues a single certificate covering both the apex domain and all subdomains.
+# This certificate is stored in the cyberorch-tls-cert Secret and referenced
+# by all Ingress resources.
+#
+# Subdomains covered:
+#   - cyberorch.com            (main landing page)
+#   - api.cyberorch.com        (API gateway)
+#   - desktop.cyberorch.com    (VNC proxy / remote desktop)
+#   - staging.cyberorch.com    (staging environment)
+#   - *.cyberorch.com          (dynamic event subdomains)
+# ------------------------------------------------------------------------------
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cyberorch-wildcard-cert
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: cyberorch-wildcard-cert
+    app.kubernetes.io/part-of: orchi
+    app.kubernetes.io/component: cert-manager
+spec:
+  secretName: cyberorch-tls-cert
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  # Wildcard + apex domain
+  dnsNames:
+    - cyberorch.com
+    - "*.cyberorch.com"
+  # Auto-renew 30 days before expiry (Let's Encrypt certs are valid for 90 days)
+  # 720h = 30 days
+  renewBefore: 720h

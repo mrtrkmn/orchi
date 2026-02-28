@@ -1,0 +1,28 @@
+# ==============================================================================
+# Orchi Challenge Service
+# ==============================================================================
+# ClusterIP Service for internal lab communication.
+# Accessible only within the lab namespace via:
+#   challenge-sql-injection.orchi-lab-example.svc.cluster.local
+# ==============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: challenge-sql-injection
+  namespace: orchi-lab-example
+  labels:
+    app.kubernetes.io/name: challenge-sql-injection
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cyberorch.com/component: challenge
+    orchi.cyberorch.com/lab-id: "example"
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: challenge-sql-injection
+    orchi.cyberorch.com/component: challenge
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP

@@ -1,3 +1,0 @@
----
-- name: Start Haaukins
-  command: sudo systemctl start hknd.service

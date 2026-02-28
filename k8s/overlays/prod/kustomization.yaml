@@ -1,0 +1,63 @@
+# ==============================================================================
+# Kustomize Overlay — Production
+# ==============================================================================
+# Production environment overlay. Full capacity, production hostnames,
+# backup schedules, and external secrets enabled.
+#
+# Legacy mapping:
+#   daemon.Config.ProductionMode = true  → Production mode
+#   daemon.Config.Host.Http              → cyberorch.com
+#   daemon.Config.Certs.Enabled = true   → TLS via cert-manager
+# ==============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../
+  # Production-only resources
+  - ../../base/external-secrets.yaml
+  - ../../workloads/backup-cronjob.yaml
+  - ../../workloads/velero-schedule.yaml
+
+patches:
+  # Production Ingress host
+  - target:
+      kind: Ingress
+      name: orchi-ingress
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: cyberorch.com
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: cyberorch.com
+
+  # Full scaling for production
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: amigo-hpa
+    patch: |
+      - op: replace
+        path: /spec/minReplicas
+        value: 2
+      - op: replace
+        path: /spec/maxReplicas
+        value: 10
+
+  # Production store PVC size
+  - target:
+      kind: StatefulSet
+      name: orchi-store
+    patch: |
+      - op: replace
+        path: /spec/volumeClaimTemplates/0/spec/resources/requests/storage
+        value: 20Gi
+
+configMapGenerator:
+  - name: orchi-operator-config
+    behavior: merge
+    literals:
+      - ORCHI_HOST_HTTP=cyberorch.com
+      - ORCHI_HOST_GRPC=grpc.cyberorch.com
+      - ORCHI_PRODUCTION_MODE=true
+      - ORCHI_REGISTRY=ghcr.io/mrtrkmn/orchi

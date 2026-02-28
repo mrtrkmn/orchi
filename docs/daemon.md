@@ -1,50 +1,51 @@
-# Daemon
-This is the core service of Haaukins, and handles multi-hosting and tearing down of events.
-Currently only one client exists for interacting with the daemon, which can be found in [client directory](../client).
+# Operator
+
+The orchi operator is the core service of the platform. It watches Kubernetes Custom Resources (Events, Labs, Teams, Challenges) and reconciles the cluster state accordingly.
 
 ## Configuration
-By default the daemon will look for a `config.yml`-file in the directory it resides, alternatively you can make it look elsewhere by specifying the `-config=<path/to/config.yml>` flag.
 
-The configuration format uses [YAML](https://learnxinyminutes.com/docs/yaml/), and an example of a configuration can be seen below.
-``` yaml
-host:
-  http: ntp-event.dk
-  grpc: cli.sec-aau.dk
-port:
-  insecure: 8080
-  secure: 8081
-ova-directory: "/scratch/ova"
-sign-key: ...
-tls:
-  enabled: true
-  acme:
-    email: ...
-    api-key: ...
-    development: false
-docker-repositories:
-- username: ...
-  password: ...
-  serveraddress: <registry URL>
-```
+The operator reads its configuration from a Kubernetes ConfigMap and Secret, mounted as environment variables. See [`k8s/base/orchi-operator-deployment.yaml`](../k8s/base/orchi-operator-deployment.yaml) for the full specification.
 
-### Exercise configuration
-The `exercise.yml` contains the definition of the exercise library (view structure in [exercise.go](https://github.com/aau-network-security/haaukins/blob/master/store/exercise.go#L36)). 
-An example of an exercise definition:
+Key configuration values:
+
+| Environment Variable | Source | Description |
+|---|---|---|
+| `ORCHI_HOST_HTTP` | ConfigMap | HTTP host for the platform |
+| `ORCHI_HOST_GRPC` | ConfigMap | gRPC host for the platform |
+| `ORCHI_PRODUCTION_MODE` | ConfigMap | Enable production mode |
+| `ORCHI_REGISTRY` | ConfigMap | Container image registry |
+| `ORCHI_SIGNING_KEY` | Secret | JWT signing key |
+| `ORCHI_RECAPTCHA_KEY` | Secret | reCAPTCHA key |
+| `STORE_AUTH_KEY` | Secret | Store authentication key |
+| `STORE_SIGN_KEY` | Secret | Store signing key |
+
+## Challenge Configuration
+
+Challenges are defined as Kubernetes Custom Resources (Challenge CRDs). See [`k8s/crds/challenge-crd.yaml`](../k8s/crds/challenge-crd.yaml) for the schema.
+
+Example challenge:
 ```yaml
-exercises:
-  - name: Cross-site Request Forgery
-    tags:
-    - csrf
-    docker:
-    - image: <registry host>/aau/csrf
-      dns:
-      - name: formalbank.com
-        type: A
-      memoryMB: 80
-      flag:
-      - tag: csrf-1
-        name: Cross-site Request Forgery
-        env: APP_FLAG
-        points: 12
+apiVersion: orchi.cyberorch.com/v1alpha1
+kind: Challenge
+metadata:
+  name: sql-injection
+  namespace: orchi-lab-example
+spec:
+  tag: sql-injection
+  name: "SQL Injection"
+  image: ghcr.io/mrtrkmn/orchi/challenges/sql-injection:1.0.0
+  memoryMB: 256
+  cpu: 0.5
+  flags:
+    - tag: sqli-1
+      name: "Find the admin password"
+      envVar: APP_FLAG
+      points: 100
+  records:
+    - type: A
+      name: sqli.lab
 ```
 
+## CLI Interaction
+
+The legacy CLI (`hkn`) can still interact with the operator for administrative tasks. See [`client/readme.md`](../client/readme.md) for CLI documentation.

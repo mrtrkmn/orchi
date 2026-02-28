@@ -1,0 +1,36 @@
+# ==============================================================================
+# VPN Ingress NetworkPolicy
+# ==============================================================================
+# When VPN is required (Event.spec.vpn.required=true), only allow traffic
+# from the WireGuard VPN pod into the lab namespace.
+#
+# Replaces:
+#   ipTab.createAcceptRule(labSubnet, vpnIPs)  → allow from VPN pod
+#   ipTab.createStateRule(labSubnet)           → stateful tracking (K8s handles)
+#   ipTab.createRejectRule(labSubnet)          → default-deny (separate policy)
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-vpn-ingress
+  namespace: orchi-lab-example
+  labels:
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cyberorch.com/component: network-policy
+    orchi.cyberorch.com/lab-id: "example"
+spec:
+  podSelector:
+    matchLabels:
+      orchi.cyberorch.com/component: challenge
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow traffic from the WireGuard VPN gateway
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              orchi.cyberorch.com/component: system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: wireguard

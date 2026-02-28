@@ -1,0 +1,76 @@
+# ==============================================================================
+# Kustomize Base — k8s/kustomization.yaml
+# ==============================================================================
+# Kustomize base configuration for the orchi platform.
+# Use overlays (dev, staging, prod) to customize per environment.
+#
+# Legacy mapping:
+#   daemon.NewConfigFromFile(path)     → Kustomize overlays per environment
+#   Single config.yml with all settings → Separated base + overlay patches
+#   Manual kubectl apply               → kustomize build | kubectl apply
+#
+# Usage:
+#   # Apply base (for review/testing):
+#   kubectl apply -k k8s/
+#
+#   # Apply with overlay:
+#   kubectl apply -k k8s/overlays/dev
+#   kubectl apply -k k8s/overlays/staging
+#   kubectl apply -k k8s/overlays/prod
+# ==============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# NOTE: The global namespace setting below applies to all namespaced resources.
+# Resources intended for other namespaces (e.g., orchi-frontend) should either:
+#   1. Be moved to separate kustomizations/overlays per namespace, or
+#   2. Have their namespace explicitly set via strategic merge patches.
+# The frontend-deployment.yaml and networkpolicy-api-frontend.yaml are designed
+# for the orchi-frontend namespace — use overlays to override the namespace.
+namespace: orchi-system
+
+resources:
+  # CRDs (cluster-scoped, applied first)
+  - crds/challenge-crd.yaml
+  - crds/event-crd.yaml
+  - crds/lab-crd.yaml
+  - crds/team-crd.yaml
+
+  # Base resources (RBAC, namespace, operator)
+  - base/orchi-operator-rbac.yaml
+  - base/orchi-operator-deployment.yaml
+  - base/poddisruptionbudget.yaml
+  - base/resource-quotas.yaml
+  - base/pod-security.yaml
+
+  # Workloads
+  - workloads/store-statefulset.yaml
+  - workloads/amigo-deployment.yaml
+  - workloads/guacamole-deployment.yaml
+  - workloads/wireguard-deployment.yaml
+  - workloads/hpa.yaml
+  # Decoupled architecture workloads
+  - workloads/frontend-deployment.yaml
+  - workloads/api-gateway-deployment.yaml
+  # VNC Proxy (Guacamole replacement) — see docs/architecture/guacamole-replacement.md
+  - workloads/vnc-proxy-deployment.yaml
+
+  # Networking
+  - networking/ingress.yaml
+  - networking/networkpolicy-store-access.yaml
+  # Decoupled architecture networking
+  - networking/ingress-decoupled.yaml
+  - networking/networkpolicy-api-frontend.yaml
+  # VNC Proxy networking
+  - networking/networkpolicy-vnc-proxy.yaml
+  # Cert-manager: Let's Encrypt + Cloudflare DNS-01 for wildcard TLS
+  - networking/cert-manager.yaml
+
+  # Observability (requires prometheus-operator)
+  - observability/prometheus-servicemonitor.yaml
+  - observability/prometheus-rules.yaml
+  - observability/grafana-dashboard-configmap.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: orchi
+  app.kubernetes.io/managed-by: kustomize

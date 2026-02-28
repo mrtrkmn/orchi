@@ -1,0 +1,104 @@
+# ==============================================================================
+# Orchi Operator — RBAC
+# ==============================================================================
+# ServiceAccount, ClusterRole, and ClusterRoleBinding for the orchi-operator.
+# The operator needs permissions to manage CRDs, namespaces, deployments,
+# services, configmaps, secrets, and custom resources across the cluster.
+# ==============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: orchi-system
+  labels:
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+    orchi.cyberorch.com/component: system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: orchi-operator
+  namespace: orchi-system
+  labels:
+    app.kubernetes.io/name: orchi-operator
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: orchi-operator
+  labels:
+    app.kubernetes.io/name: orchi-operator
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+rules:
+  # Manage orchi CRDs (Event, Lab, Team, Challenge)
+  - apiGroups: ["orchi.cyberorch.com"]
+    resources:
+      - events
+      - events/status
+      - labs
+      - labs/status
+      - teams
+      - teams/status
+      - challenges
+      - challenges/status
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Manage namespaces (one per lab)
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Manage workloads in lab namespaces
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Manage core resources in lab namespaces
+  - apiGroups: [""]
+    resources:
+      - pods
+      - services
+      - configmaps
+      - secrets
+      - persistentvolumeclaims
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Read pod logs for debugging
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get", "list"]
+
+  # Manage network policies for lab isolation
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Events for recording reconciliation activity
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+
+  # Leader election
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: orchi-operator
+  labels:
+    app.kubernetes.io/name: orchi-operator
+    app.kubernetes.io/managed-by: orchi-operator
+    app.kubernetes.io/part-of: orchi
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: orchi-operator
+subjects:
+  - kind: ServiceAccount
+    name: orchi-operator
+    namespace: orchi-system
