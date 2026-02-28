@@ -1,8 +1,13 @@
 # ==============================================================================
-# Kustomize Root — k8s/kustomization.yaml
+# Kustomize Base — k8s/kustomization.yaml
 # ==============================================================================
-# Root entry point that delegates to the base configuration.
-# For environment-specific deployments, use overlays instead:
+# Kustomize base configuration for the orchi platform.
+# Use overlays (dev, staging, prod) to customize per environment.
+#
+# Legacy mapping:
+#   daemon.NewConfigFromFile(path)     → Kustomize overlays per environment
+#   Single config.yml with all settings → Separated base + overlay patches
+#   Manual kubectl apply               → kustomize build | kubectl apply
 #
 # Usage:
 #   # Apply base (for review/testing):
