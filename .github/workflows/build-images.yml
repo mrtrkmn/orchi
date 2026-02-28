@@ -1,0 +1,118 @@
+name: Build & Push Container Images
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, main]
+    paths:
+      - 'cmd/**'
+      - 'api/**'
+      - 'frontend/**'
+      - 'docker/**'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/build-images.yml'
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  # ── Go services (multi-stage builds from repo root) ──────────────────
+  go-services:
+    name: Build ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: operator
+            image: ghcr.io/mrtrkmn/orchi/operator
+            dockerfile: docker/Dockerfile.operator
+            tag: latest
+          - service: amigo
+            image: ghcr.io/mrtrkmn/orchi/amigo
+            dockerfile: docker/Dockerfile.amigo
+            tag: latest
+          - service: api-gateway
+            image: ghcr.io/mrtrkmn/orchi-api
+            dockerfile: docker/Dockerfile.api-gateway
+            tag: latest
+          - service: vnc-proxy
+            image: ghcr.io/mrtrkmn/orchi-vnc-proxy
+            dockerfile: docker/Dockerfile.vnc-proxy
+            tag: v0.1.0
+          - service: store
+            image: ghcr.io/mrtrkmn/orchi/store
+            dockerfile: docker/Dockerfile.store
+            tag: latest
+          - service: migration
+            image: ghcr.io/mrtrkmn/orchi/migration
+            dockerfile: docker/Dockerfile.migration
+            tag: latest
+          - service: guacamole
+            image: ghcr.io/mrtrkmn/orchi/guacamole
+            dockerfile: docker/Dockerfile.guacamole
+            tag: latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ matrix.image }}:${{ matrix.tag }}
+            ${{ matrix.image }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+  # ── Frontend (has its own Dockerfile) ────────────────────────────────
+  frontend:
+    name: Build frontend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          file: frontend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/mrtrkmn/orchi-frontend:latest
+            ghcr.io/mrtrkmn/orchi-frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64

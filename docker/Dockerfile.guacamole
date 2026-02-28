@@ -1,0 +1,13 @@
+# Custom Guacamole web application image
+# Based on the official Apache Guacamole client (Tomcat-based web app)
+FROM guacamole/guacamole:1.5.5
+
+# The official image handles GUACD_HOSTNAME, MYSQL_HOSTNAME, MYSQL_DATABASE,
+# MYSQL_USER, MYSQL_PASSWORD environment variables natively.
+# This custom image exists to allow any future customizations.
+
+USER root
+RUN mkdir -p /opt/guacamole/extensions-available
+USER guacamole
+
+EXPOSE 8080
