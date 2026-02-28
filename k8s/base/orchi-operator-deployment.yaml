@@ -114,32 +114,6 @@ spec:
       terminationGracePeriodSeconds: 30
 ---
 # ==============================================================================
-# Operator ConfigMap — non-sensitive configuration
-# ==============================================================================
-# Replaces daemon.Config fields that are non-sensitive.
-# ==============================================================================
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: orchi-operator-config
-  namespace: orchi-system
-  labels:
-    app.kubernetes.io/name: orchi-operator
-    app.kubernetes.io/part-of: orchi
-data:
-  # Maps to daemon.Config.Host
-  ORCHI_HOST_HTTP: "cyberorch.com"
-  ORCHI_HOST_GRPC: "grpc.cyberorch.com"
-  # Maps to daemon.Config.ProductionMode
-  ORCHI_PRODUCTION_MODE: "true"
-  # Lab cleanup intervals (replaces daemon job schedulers)
-  ORCHI_LAB_CHECK_INTERVAL: "5h"
-  ORCHI_EVENT_CHECK_INTERVAL: "8h"
-  ORCHI_OVERDUE_CHECK_INTERVAL: "12h"
-  # Registry for challenge images
-  ORCHI_REGISTRY: "ghcr.io/mrtrkmn/orchi"
----
-# ==============================================================================
 # Operator Secret — sensitive configuration
 # ==============================================================================
 # Replaces daemon.Config fields that contain credentials.

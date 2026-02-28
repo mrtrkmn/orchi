@@ -74,7 +74,10 @@ labels:
 configMapGenerator:
   - name: orchi-operator-config
     literals:
-      - ORCHI_HOST_HTTP=localhost
-      - ORCHI_HOST_GRPC=localhost
-      - ORCHI_PRODUCTION_MODE=false
-      - ORCHI_REGISTRY=localhost:5000/orchi
+      - ORCHI_HOST_HTTP=cyberorch.com
+      - ORCHI_HOST_GRPC=grpc.cyberorch.com
+      - ORCHI_PRODUCTION_MODE=true
+      - ORCHI_REGISTRY=ghcr.io/mrtrkmn/orchi
+      - ORCHI_LAB_CHECK_INTERVAL=5h
+      - ORCHI_EVENT_CHECK_INTERVAL=8h
+      - ORCHI_OVERDUE_CHECK_INTERVAL=12h
