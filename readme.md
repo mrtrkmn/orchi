@@ -123,15 +123,11 @@ kubectl -n orchi-system get pods
 
 ```
 k8s/                    # Kubernetes manifests (CRDs, workloads, networking, observability)
-daemon/                 # Operator / daemon core logic
-client/                 # CLI client
-svcs/amigo/             # Amigo web frontend (flag submission UI)
-svcs/guacamole/         # Guacamole integration
-store/                  # Data persistence layer
-exercise/               # Exercise/challenge definitions
-network/                # Network and VPN management
-virtual/                # Container runtime abstraction
-logging/                # Structured logging
+api/                    # REST API gateway (Go, chi router)
+frontend/               # Frontend SPA (React + TypeScript)
+create-cluster/         # EKS cluster configuration (eksctl)
+docs/                   # Architecture docs, deployment guides
+.github/workflows/      # CI/CD pipelines (deploy, test, events)
 ```
 
 See [`k8s/README.md`](k8s/README.md) for the full Kubernetes manifest documentation, including CRD schemas, deployment order, network policy strategy, and observability setup.
@@ -153,9 +149,6 @@ go mod download
 
 # Run tests
 go test -v --race ./...
-
-# Build
-go build -o orchi ./main.go
 ```
 
 ## Contributing

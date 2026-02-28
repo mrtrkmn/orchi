@@ -1,3 +1,0 @@
----
-- name: Start Orchi
-  command: sudo systemctl start hknd.service
