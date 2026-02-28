@@ -1,0 +1,74 @@
+# ==============================================================================
+# Velero Backup Schedule
+# ==============================================================================
+# Cluster-level backup of orchi namespaces and CRDs using Velero.
+# Provides disaster recovery for the entire orchi platform state.
+#
+# Legacy mapping:
+#   No legacy equivalent — manual backup only
+#   daemon.Config.ConfFiles.EventsDir  → Velero backs up PVCs + CRDs
+#   store.EventConfig in-memory        → Event CRs backed up by Velero
+#   store.Team in-memory               → Team CRs backed up by Velero
+#
+# Prerequisites:
+#   - Velero installed (https://velero.io)
+#   - BackupStorageLocation configured
+#   - VolumeSnapshotLocation configured
+# ==============================================================================
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: orchi-full-backup
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: orchi
+    orchi.cyberorch.com/component: backup
+spec:
+  schedule: "0 2 * * *"
+  template:
+    # Include orchi-system and all lab namespaces
+    includedNamespaces:
+      - orchi-system
+    # Also back up cluster-scoped CRDs
+    includedClusterScopedResources:
+      - events.orchi.cyberorch.com
+      - labs.orchi.cyberorch.com
+      - challenges.orchi.cyberorch.com
+    # Include PVC data
+    snapshotVolumes: true
+    # Time-to-live for backups
+    ttl: 168h0m0s
+    storageLocation: default
+    volumeSnapshotLocations:
+      - default
+    defaultVolumesToFsBackup: true
+  useOwnerReferencesInBackup: false
+---
+# ==============================================================================
+# Velero Schedule — CRD-only backup (more frequent, lightweight)
+# ==============================================================================
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: orchi-crd-backup
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: orchi
+    orchi.cyberorch.com/component: backup
+spec:
+  schedule: "0 */4 * * *"
+  template:
+    includedNamespaces:
+      - orchi-system
+    includedClusterScopedResources:
+      - events.orchi.cyberorch.com
+      - labs.orchi.cyberorch.com
+      - challenges.orchi.cyberorch.com
+    includedNamespacedResources:
+      - teams.orchi.cyberorch.com
+      - configmaps
+      - secrets
+    snapshotVolumes: false
+    ttl: 72h0m0s
+    storageLocation: default
+  useOwnerReferencesInBackup: false
