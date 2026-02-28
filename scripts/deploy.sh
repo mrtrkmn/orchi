@@ -6,7 +6,7 @@
 # Handles cluster authentication, manifest validation, and rollout verification.
 #
 # Usage:
-#   ./scripts/deploy.sh -e <environment> [-p <provider>] [-d] [-h]
+#   ./scripts/deploy.sh -e <environment> [-p <provider>] [-d] [-r] [-h]
 #
 # Examples:
 #   ./scripts/deploy.sh -e dev                          # Deploy to dev (kubeconfig)
@@ -14,6 +14,7 @@
 #   ./scripts/deploy.sh -e prod -p aws                  # Deploy to prod via AWS EKS
 #   ./scripts/deploy.sh -e prod -p aws -d               # Dry run (diff only)
 #   ./scripts/deploy.sh -e prod -p kubeconfig            # Deploy to prod via kubeconfig
+#   ./scripts/deploy.sh -e prod -p aws -r               # Remove ALL orchi resources
 # ==============================================================================
 
 set -euo pipefail
@@ -68,7 +69,7 @@ EKS_CLUSTER_NAME="${EKS_CLUSTER_NAME:-orchi-cluster}"
 
 usage() {
     cat <<EOF
-Usage: $(basename "$0") -e <environment> [-p <provider>] [-d] [-h]
+Usage: $(basename "$0") -e <environment> [-p <provider>] [-d] [-r] [-h]
 
 Deploy the Orchi platform to the specified environment.
 
@@ -76,6 +77,7 @@ Options:
   -e <environment>   Target environment: prod, staging, or dev (required)
   -p <provider>      Cluster provider: kubeconfig or aws (default: kubeconfig)
   -d                 Dry run — show diff only, do not apply
+  -r                 Remove ALL orchi resources (namespace, CRDs, Helm releases)
   -h                 Show this help message
 
 Environment variables (for AWS provider):
@@ -244,7 +246,102 @@ wait_for_rollout() {
 }
 
 # ==============================================================================
-# Step 7: Verify Deployment
+# Step 7: Remove All
+# ==============================================================================
+remove_all() {
+    log "============================================"
+    log "  REMOVING ALL ORCHI RESOURCES"
+    log "============================================"
+    echo ""
+    log "WARNING: This will delete:"
+    log "  - All resources in namespace '${NAMESPACE}'"
+    log "  - Orchi CRDs and all custom resources"
+    log "  - Helm releases (external-secrets, kube-prometheus-stack, velero)"
+    log "  - Persistent volumes and data"
+    echo ""
+    read -r -p "Type 'yes-remove-everything' to confirm: " confirm
+    if [ "${confirm}" != "yes-remove-everything" ]; then
+        log "Aborted. No changes made."
+        exit 0
+    fi
+
+    echo ""
+
+    # ── Step 1: Delete Kustomize-managed resources ──
+    log "[1/6] Deleting Kustomize-managed resources..."
+    if kubectl kustomize "${KUSTOMIZE_BASE}/${ENVIRONMENT}" &>/dev/null; then
+        kubectl delete -k "${KUSTOMIZE_BASE}/${ENVIRONMENT}" --ignore-not-found --wait=false || true
+    fi
+    log "  Kustomize resources deleted"
+
+    # ── Step 2: Delete remaining workloads in namespace ──
+    log "[2/6] Cleaning up remaining workloads in ${NAMESPACE}..."
+    for kind in deployment statefulset daemonset job cronjob; do
+        kubectl -n "${NAMESPACE}" delete "${kind}" --all --ignore-not-found --wait=false 2>/dev/null || true
+    done
+    kubectl -n "${NAMESPACE}" delete pods --all --force --grace-period=0 2>/dev/null || true
+    log "  Workloads cleaned up"
+
+    # ── Step 3: Delete services, configmaps, secrets, PVCs ──
+    log "[3/6] Deleting services, configs, secrets, and PVCs..."
+    for kind in service configmap secret pvc ingress networkpolicy; do
+        kubectl -n "${NAMESPACE}" delete "${kind}" --all --ignore-not-found 2>/dev/null || true
+    done
+    log "  Namespace resources deleted"
+
+    # ── Step 4: Delete Orchi CRDs ──
+    log "[4/6] Deleting Orchi CRDs..."
+    local crds
+    crds=$(kubectl get crds -o name 2>/dev/null | grep orchi || true)
+    if [ -n "${crds}" ]; then
+        echo "${crds}" | xargs kubectl delete --ignore-not-found --wait=false
+        log "  CRDs deleted: $(echo "${crds}" | wc -l | tr -d ' ') CRD(s)"
+    else
+        log "  No Orchi CRDs found"
+    fi
+
+    # ── Step 5: Uninstall Helm releases ──
+    log "[5/6] Uninstalling Helm releases..."
+    if command -v helm &>/dev/null; then
+        for release_ns in "external-secrets:external-secrets" "kube-prometheus-stack:monitoring" "velero:velero"; do
+            local release="${release_ns%%:*}"
+            local ns="${release_ns##*:}"
+            if helm status "${release}" -n "${ns}" &>/dev/null; then
+                helm uninstall "${release}" -n "${ns}" --wait 2>/dev/null || true
+                log "  Uninstalled Helm release: ${release} (ns: ${ns})"
+            fi
+        done
+        # Clean up Helm namespaces
+        for ns in external-secrets monitoring velero; do
+            kubectl delete namespace "${ns}" --ignore-not-found --wait=false 2>/dev/null || true
+        done
+    else
+        log "  helm not found — skipping Helm cleanup"
+        log "  Manually run: helm uninstall <release> -n <namespace>"
+    fi
+
+    # ── Step 6: Delete namespace ──
+    log "[6/6] Deleting namespace ${NAMESPACE}..."
+    kubectl delete namespace "${NAMESPACE}" --ignore-not-found --wait=false 2>/dev/null || true
+    log "  Namespace ${NAMESPACE} deletion initiated"
+
+    echo ""
+    log "============================================"
+    log "  REMOVAL COMPLETE"
+    log "============================================"
+    log "All Orchi resources have been removed."
+    log ""
+    log "Note: PersistentVolumes may take a moment to be reclaimed."
+    log "Check with: kubectl get pv | grep orchi"
+    log ""
+    log "To verify clean state:"
+    log "  kubectl get all -n ${NAMESPACE}"
+    log "  kubectl get crds | grep orchi"
+    log "  kubectl get ns ${NAMESPACE}"
+}
+
+# ==============================================================================
+# Step 8: Verify Deployment
 # ==============================================================================
 verify_deployment() {
     log "Verifying deployment..."
@@ -272,12 +369,14 @@ verify_deployment() {
 ENVIRONMENT=""
 PROVIDER="kubeconfig"
 DRY_RUN="false"
+REMOVE_ALL="false"
 
-while getopts "e:p:dh" opt; do
+while getopts "e:p:drh" opt; do
     case "${opt}" in
         e) ENVIRONMENT="${OPTARG}" ;;
         p) PROVIDER="${OPTARG}" ;;
         d) DRY_RUN="true" ;;
+        r) REMOVE_ALL="true" ;;
         h) usage ;;
         *) usage ;;
     esac
@@ -305,6 +404,7 @@ log "=========================================="
 log "Environment : ${ENVIRONMENT}"
 log "Provider    : ${PROVIDER}"
 log "Dry run     : ${DRY_RUN}"
+log "Remove all  : ${REMOVE_ALL}"
 log "Namespace   : ${NAMESPACE}"
 log "=========================================="
 
@@ -314,7 +414,9 @@ check_prerequisites
 configure_cluster
 validate_manifests
 
-if [ "${DRY_RUN}" = "true" ]; then
+if [ "${REMOVE_ALL}" = "true" ]; then
+    remove_all
+elif [ "${DRY_RUN}" = "true" ]; then
     diff_manifests
     log "Dry run complete. No changes were applied."
 else

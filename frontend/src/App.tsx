@@ -9,13 +9,18 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ChallengesPage } from './pages/ChallengesPage';
 import { ScoreboardPage } from './pages/ScoreboardPage';
 import { LabPage } from './pages/LabPage';
+import { EventPage } from './pages/EventPage';
 import { useAuthStore } from './hooks/useAuth';
+import { getEventSlug } from './hooks/useEventContext';
 
 /**
  * Root application component.
  *
  * Sets up routing, loads auth state from storage, and renders the
  * navigation bar and page content.
+ *
+ * When accessed from an event subdomain (e.g. ctf2026.cyberorch.com),
+ * the root "/" route renders the EventPage instead of the LandingPage.
  */
 const App: React.FC = () => {
   const loadFromStorage = useAuthStore((s) => s.loadFromStorage);
@@ -24,6 +29,8 @@ const App: React.FC = () => {
     loadFromStorage();
   }, [loadFromStorage]);
 
+  const isEventSubdomain = !!getEventSlug();
+
   return (
     <BrowserRouter>
       <div className="app">
@@ -31,7 +38,11 @@ const App: React.FC = () => {
         <main className="main-content">
           <Routes>
             {/* Public routes */}
-            <Route path="/" element={<LandingPage />} />
+            <Route
+              path="/"
+              element={isEventSubdomain ? <EventPage /> : <LandingPage />}
+            />
+            <Route path="/events" element={<EventPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
 

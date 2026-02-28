@@ -7,7 +7,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: orchi-frontend
-  namespace: orchi-frontend
+  namespace: orchi-system
   labels:
     app.kubernetes.io/name: orchi-frontend
     app.kubernetes.io/part-of: orchi
@@ -84,7 +84,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: orchi-frontend
-  namespace: orchi-frontend
+  namespace: orchi-system
   labels:
     app.kubernetes.io/name: orchi-frontend
     app.kubernetes.io/part-of: orchi
@@ -102,7 +102,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: orchi-frontend
-  namespace: orchi-frontend
+  namespace: orchi-system
   labels:
     app.kubernetes.io/name: orchi-frontend
     app.kubernetes.io/part-of: orchi

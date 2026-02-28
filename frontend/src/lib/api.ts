@@ -1,9 +1,27 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL ||
-  (window.location.hostname === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(window.location.hostname)
-    ? '/api/v1'
-    : `${window.location.protocol}//api.${window.location.hostname}/api/v1`);
+/**
+ * Determine the API base URL.
+ *
+ * - localhost / IP  → use /api/v1 (vite proxy or port-forward)
+ * - *.cyberorch.com → api.cyberorch.com/api/v1
+ */
+function resolveApiUrl(): string {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+
+  const host = window.location.hostname;
+
+  // Local development
+  if (host === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+    return '/api/v1';
+  }
+
+  // Production: always route to api.cyberorch.com regardless of subdomain
+  const rootDomain = host.split('.').slice(-2).join('.');
+  return `${window.location.protocol}//api.${rootDomain}/api/v1`;
+}
+
+const API_BASE_URL = resolveApiUrl();
 
 /**
  * Axios instance configured for the Orchi API.

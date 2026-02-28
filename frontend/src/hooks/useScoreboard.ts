@@ -4,10 +4,15 @@ import type { ScoreUpdateMessage } from '../types/api';
 const isLocal = typeof window !== 'undefined' &&
   (window.location.hostname === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(window.location.hostname));
 
-const WS_BASE_URL = import.meta.env.VITE_WS_URL ||
-  (isLocal
-    ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v1`
-    : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//api.${window.location.hostname}/api/v1`);
+function resolveWsUrl(): string {
+  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  if (isLocal) return `${proto}//${window.location.host}/api/v1`;
+  const rootDomain = window.location.hostname.split('.').slice(-2).join('.');
+  return `${proto}//api.${rootDomain}/api/v1`;
+}
+
+const WS_BASE_URL = resolveWsUrl();
 
 /**
  * Custom hook for WebSocket connection to the live scoreboard.

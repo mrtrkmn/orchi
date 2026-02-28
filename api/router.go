@@ -111,6 +111,13 @@ func NewRouter(cfg Config) http.Handler {
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			path := r.URL.Path
 			switch {
+			case strings.HasPrefix(path, "/api/v1/events/by-slug/"):
+				if r.Method == http.MethodGet {
+					eventHandler.GetBySlug(w, r)
+				} else {
+					w.Header().Set("Allow", "GET")
+					w.WriteHeader(http.StatusMethodNotAllowed)
+				}
 			case strings.HasSuffix(path, "/challenges"):
 				if r.Method == http.MethodGet {
 					challengeHandler.List(w, r)

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/mrtrkmn/orchi/api/models"
 )
@@ -35,6 +36,31 @@ func (h *EventHandler) List(w http.ResponseWriter, r *http.Request) {
 func (h *EventHandler) Get(w http.ResponseWriter, r *http.Request) {
 	// eventID would be extracted from URL path
 	writeJSON(w, http.StatusOK, models.Event{})
+}
+
+// GetBySlug returns an event by its URL slug (subdomain name).
+//
+// GET /api/v1/events/by-slug/{slug}
+//
+// The slug corresponds to the subdomain part of <slug>.cyberorch.com.
+// Used by the frontend to resolve event context from the current hostname.
+func (h *EventHandler) GetBySlug(w http.ResponseWriter, r *http.Request) {
+	// Extract slug from URL path
+	path := r.URL.Path
+	prefix := "/api/v1/events/by-slug/"
+	if !strings.HasPrefix(path, prefix) || len(path) <= len(prefix) {
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Event slug is required")
+		return
+	}
+	slug := path[len(prefix):]
+
+	// In production, this would look up the event by slug via gRPC
+	// For now, return a placeholder event matching the slug
+	writeJSON(w, http.StatusOK, models.Event{
+		Name:   slug,
+		Type:   "ctf",
+		Status: "running",
+	})
 }
 
 // Create creates a new event (admin/organizer only).

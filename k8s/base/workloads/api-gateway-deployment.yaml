@@ -133,7 +133,7 @@ metadata:
     app.kubernetes.io/name: orchi-api-gateway
     app.kubernetes.io/part-of: orchi
 data:
-  cors-origins: "https://cyberorch.com,https://app.cyberorch.com"
+  cors-origins: "https://cyberorch.com,https://*.cyberorch.com"
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler

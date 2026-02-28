@@ -106,17 +106,48 @@ func RequireRole(roles ...string) func(http.Handler) http.Handler {
 // CORS creates a middleware that handles Cross-Origin Resource Sharing headers.
 // It allows requests from the specified origins and handles preflight OPTIONS requests.
 func CORS(allowedOrigins []string) func(http.Handler) http.Handler {
-	originsSet := make(map[string]bool, len(allowedOrigins))
+	// Separate exact origins from wildcard patterns (e.g. "https://*.cyberorch.com")
+	exactOrigins := make(map[string]bool)
+	var wildcardSuffixes []string
 	for _, o := range allowedOrigins {
-		originsSet[o] = true
+		if strings.Contains(o, "*") {
+			// Convert "https://*.cyberorch.com" → suffix ".cyberorch.com" with scheme "https://"
+			wildcardSuffixes = append(wildcardSuffixes, o)
+		} else {
+			exactOrigins[o] = true
+		}
+	}
+
+	matchOrigin := func(origin string) bool {
+		if exactOrigins[origin] {
+			return true
+		}
+		for _, pattern := range wildcardSuffixes {
+			// "https://*.cyberorch.com" → scheme "https://", suffix ".cyberorch.com"
+			star := strings.Index(pattern, "*")
+			if star < 0 {
+				continue
+			}
+			prefix := pattern[:star]   // "https://"
+			suffix := pattern[star+1:] // ".cyberorch.com"
+			if strings.HasPrefix(origin, prefix) && strings.HasSuffix(origin, suffix) {
+				// Ensure there's something between prefix and suffix (the subdomain)
+				mid := origin[len(prefix) : len(origin)-len(suffix)]
+				if len(mid) > 0 && !strings.Contains(mid, "/") {
+					return true
+				}
+			}
+		}
+		return false
 	}
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			origin := r.Header.Get("Origin")
 
-			if originsSet[origin] {
+			if matchOrigin(origin) {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Vary", "Origin")
 			}
 
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
