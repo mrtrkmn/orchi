@@ -70,3 +70,11 @@ labels:
   - pairs:
       app.kubernetes.io/part-of: orchi
       app.kubernetes.io/managed-by: kustomize
+
+configMapGenerator:
+  - name: orchi-operator-config
+    literals:
+      - ORCHI_HOST_HTTP=localhost
+      - ORCHI_HOST_GRPC=localhost
+      - ORCHI_PRODUCTION_MODE=false
+      - ORCHI_REGISTRY=localhost:5000/orchi
