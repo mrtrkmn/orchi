@@ -51,7 +51,8 @@ resources:
   - workloads/vnc-proxy-deployment.yaml
 
   # Networking
-  - networking/ingress.yaml
+  # NOTE: ingress.yaml (legacy monolithic ingress) removed — ingress-decoupled.yaml
+  # handles all routing for the new architecture (frontend, API, VNC proxy).
   - networking/networkpolicy-store-access.yaml
   # Decoupled architecture networking
   - networking/ingress-decoupled.yaml

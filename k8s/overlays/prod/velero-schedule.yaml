@@ -64,7 +64,7 @@ spec:
       - events.orchi.cyberorch.com
       - labs.orchi.cyberorch.com
       - challenges.orchi.cyberorch.com
-    includedNamespacedResources:
+    includedNamespaceScopedResources:
       - teams.orchi.cyberorch.com
       - configmaps
       - secrets
