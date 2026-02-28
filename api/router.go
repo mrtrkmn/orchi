@@ -90,19 +90,34 @@ func NewRouter(cfg Config) http.Handler {
 		methodFilter("POST"),
 	))
 
-	// Events
+	// Events — listing is public, creation requires auth
 	mux.Handle("/api/v1/events", chain(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case "GET":
 				eventHandler.List(w, r)
 			case "POST":
-				eventHandler.Create(w, r)
+				// Create requires authentication
+				jwtMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					eventHandler.Create(w, r)
+				})).ServeHTTP(w, r)
 			default:
 				w.WriteHeader(http.StatusMethodNotAllowed)
 			}
 		}),
-		jwtMiddleware,
+		middleware.RateLimit(apiLimiter),
+	))
+
+	// Public event lookup by slug (used by frontend subdomain detection)
+	mux.Handle("/api/v1/events/by-slug/", chain(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				eventHandler.GetBySlug(w, r)
+			} else {
+				w.Header().Set("Allow", "GET")
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+		}),
 		middleware.RateLimit(apiLimiter),
 	))
 
@@ -111,13 +126,6 @@ func NewRouter(cfg Config) http.Handler {
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			path := r.URL.Path
 			switch {
-			case strings.HasPrefix(path, "/api/v1/events/by-slug/"):
-				if r.Method == http.MethodGet {
-					eventHandler.GetBySlug(w, r)
-				} else {
-					w.Header().Set("Allow", "GET")
-					w.WriteHeader(http.StatusMethodNotAllowed)
-				}
 			case strings.HasSuffix(path, "/challenges"):
 				if r.Method == http.MethodGet {
 					challengeHandler.List(w, r)

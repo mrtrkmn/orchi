@@ -10,7 +10,7 @@ import (
 
 func newTestRouter() http.Handler {
 	return NewRouter(Config{
-		SigningKey:          []byte("test-secret-key-for-tests"),
+		SigningKey:         []byte("test-secret-key-for-tests"),
 		AllowedOrigins:     []string{"https://cyberorch.com"},
 		RateLimitPerMinute: 120,
 	})
@@ -94,13 +94,14 @@ func TestAuthRegisterWrongMethod(t *testing.T) {
 func TestProtectedEndpointWithoutAuth(t *testing.T) {
 	router := newTestRouter()
 
-	req := httptest.NewRequest("GET", "/api/v1/events", nil)
+	// GET /api/v1/events is public (event listing), POST requires auth
+	req := httptest.NewRequest("POST", "/api/v1/events", nil)
 	rr := httptest.NewRecorder()
 
 	router.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusUnauthorized {
-		t.Errorf("Unauthenticated events status = %d, want %d", rr.Code, http.StatusUnauthorized)
+		t.Errorf("Unauthenticated events POST status = %d, want %d", rr.Code, http.StatusUnauthorized)
 	}
 }
 
@@ -129,7 +130,7 @@ func TestSecurityHeaders(t *testing.T) {
 
 	headers := map[string]string{
 		"X-Content-Type-Options": "nosniff",
-		"X-Frame-Options":       "DENY",
+		"X-Frame-Options":        "DENY",
 	}
 
 	for key, want := range headers {
